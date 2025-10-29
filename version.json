@@ -1,7 +1,17 @@
 {
-  "version": "1.0.1",
+  "version": "1.0.2",
   "release_date": "2025-10-29",
   "changelog": [
+    {
+      "version": "1.0.2",
+      "date": "2025-10-29",
+      "changes": [
+        "CRITICAL FIX: Resolved app freeze when clicking 'Get AI Answer'",
+        "Replaced Tkinter Text widget with thread-safe CTkTextbox",
+        "Fixed incompatibility between raw Tkinter and CustomTkinter widgets",
+        "Maintained text wrapping functionality for dropdown questions"
+      ]
+    },
     {
       "version": "1.0.1",
       "date": "2025-10-29",
@@ -10,7 +20,8 @@
         "Improved text wrapping using Text widget for better inline display",
         "Added wraplength to fill-in-the-blank questions",
         "Better inline dropdown display format with proper styling"
-      ]
+      ],
+      "notes": "v1.0.1 introduced a critical freeze bug - upgrade to v1.0.2"
     },
     {
       "version": "1.0.0",
