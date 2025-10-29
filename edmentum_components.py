@@ -508,29 +508,60 @@ class EdmentumDropdown(EdmentumComponent):
             label.pack(fill="x")
             return
 
-        # Build text with inline dropdowns
+        # Build text with inline dropdowns using vertical layout for better wrapping
         current_pos = 0
-        row_frame = ctk.CTkFrame(content_frame, fg_color="transparent")
-        row_frame.pack(fill="x", pady=5)
+
+        # Use Text widget for better inline element support
+        from tkinter import Text, END
+        import tkinter.font as tkfont
+
+        # Create a text widget for mixed content
+        text_widget = Text(
+            content_frame,
+            wrap="word",
+            font=(EDMENTUM_STYLES['font_family'], EDMENTUM_STYLES['font_size_question']),
+            bg=self.get_color('white'),
+            fg=self.get_color('gray_dark'),
+            relief="flat",
+            borderwidth=0,
+            height=5,
+            state="normal"
+        )
+        text_widget.pack(fill="x", pady=5)
 
         for match in matches:
             # Text before placeholder
             before_text = text[current_pos:match.start()]
-            if before_text.strip():
-                self._add_text_segment(row_frame, before_text)
+            if before_text:
+                text_widget.insert(END, before_text)
 
-            # Dropdown widget
+            # Dropdown placeholder (show selected value inline)
             placeholder_id = match.group(1)
             dropdown_data = self._find_dropdown(placeholder_id)
             if dropdown_data:
-                self._add_dropdown_widget(row_frame, dropdown_data)
+                selected_text = dropdown_data.get('selected_text',
+                                                 dropdown_data.get('text_content', '???'))
+                # Insert dropdown selection as bold blue text
+                text_widget.insert(END, f"[{selected_text}]")
+                # Apply styling to the inserted dropdown text
+                start_idx = f"{float(text_widget.index('end'))-1:.1f}"
+                text_widget.tag_add("dropdown", f"end-{len(selected_text)+2}c", "end-1c")
 
             current_pos = match.end()
 
         # Text after last placeholder
         after_text = text[current_pos:]
-        if after_text.strip():
-            self._add_text_segment(row_frame, after_text)
+        if after_text:
+            text_widget.insert(END, after_text)
+
+        # Configure dropdown tag styling
+        text_widget.tag_config("dropdown",
+                              foreground=EDMENTUM_STYLES['blue_primary'],
+                              font=(EDMENTUM_STYLES['font_family'],
+                                   EDMENTUM_STYLES['font_size_question'],
+                                   "bold"))
+
+        text_widget.config(state="disabled")  # Make read-only
 
     def _find_dropdown(self, placeholder_id: str) -> Optional[Dict]:
         """Find dropdown data by placeholder ID"""
@@ -541,12 +572,14 @@ class EdmentumDropdown(EdmentumComponent):
         return None
 
     def _add_text_segment(self, parent, text: str):
-        """Add a text segment"""
+        """Add a text segment with proper text wrapping"""
         label = ctk.CTkLabel(
             parent,
             text=text,
             font=(EDMENTUM_STYLES['font_family'], EDMENTUM_STYLES['font_size_question']),
             text_color=self.get_color('gray_dark'),
+            wraplength=650,
+            justify="left",
             anchor="w"
         )
         label.pack(side="left", padx=2)
@@ -669,12 +702,14 @@ class EdmentumFillBlank(EdmentumComponent):
         return None
 
     def _add_text_segment(self, parent, text: str):
-        """Add a text segment"""
+        """Add a text segment with proper text wrapping"""
         label = ctk.CTkLabel(
             parent,
             text=text,
             font=(EDMENTUM_STYLES['font_family'], EDMENTUM_STYLES['font_size_question']),
             text_color=self.get_color('gray_dark'),
+            wraplength=650,
+            justify="left",
             anchor="w"
         )
         label.pack(side="left", padx=2)

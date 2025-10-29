@@ -1,7 +1,17 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "release_date": "2025-10-29",
   "changelog": [
+    {
+      "version": "1.0.1",
+      "date": "2025-10-29",
+      "changes": [
+        "Fixed text cutoff in dropdown/cloze questions",
+        "Improved text wrapping using Text widget for better inline display",
+        "Added wraplength to fill-in-the-blank questions",
+        "Better inline dropdown display format with proper styling"
+      ]
+    },
     {
       "version": "1.0.0",
       "date": "2025-10-29",
