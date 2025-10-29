@@ -1,0 +1,17 @@
+{
+  "version": "1.0.0",
+  "release_date": "2025-10-29",
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2025-10-29",
+      "changes": [
+        "Fixed CTkTextbox font error in hot text questions",
+        "Implemented true progressive streaming (no flicker)",
+        "Fixed hot text display to show full passage with highlights",
+        "Added response validation to prevent multiple correct answers",
+        "Created auto-update system with GitHub integration"
+      ]
+    }
+  ]
+}

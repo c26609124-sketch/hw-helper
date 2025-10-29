@@ -1,0 +1,5 @@
+customtkinter==5.2.2
+Pillow==11.2.1
+protobuf==6.31.1
+selenium==4.33.0
+requests==2.32.3
