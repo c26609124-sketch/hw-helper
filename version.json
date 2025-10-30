@@ -1,7 +1,24 @@
 {
-  "version": "1.0.17",
+  "version": "1.0.18",
   "release_date": "2025-10-30",
   "changelog": [
+    {
+      "version": "1.0.18",
+      "date": "2025-10-30",
+      "changes": [
+        "NEW: Camera icon (📸) for screenshot logs with actual PNG file",
+        "NEW: Icon images on Capture/Answer buttons (camera + AI icons)",
+        "NEW: Automatic Discord error reporting (sends instantly to developer)",
+        "FIX: Activity log timestamp padding reduced (5px → 2px, cleaner look)",
+        "FIX: Blue info logs now use info icon instead of success icon",
+        "FIX: Removed ALL [i] [✓] text fallbacks, pure icons/Unicode now",
+        "FIX: Edmentum renderer enabled - hot text questions render properly",
+        "FIX: 'Which two lines' questions show green-highlighted passages",
+        "UPDATE: All 15 Edmentum item types now supported with proper rendering",
+        "UPDATE: Test screenshots directory added with documentation",
+        "UPDATE: EdmentumQuestionRenderer routes to correct component per type"
+      ]
+    },
     {
       "version": "1.0.17",
       "date": "2025-10-30",

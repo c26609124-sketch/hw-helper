@@ -866,6 +866,156 @@ class EdmentumHotText(EdmentumComponent):
 
 
 # ============================================================================
+# QUESTION RENDERER (Routes to appropriate component)
+# ============================================================================
+
+class EdmentumQuestionRenderer:
+    """
+    Main renderer that routes questions to appropriate Edmentum components
+    based on the rendering_strategy from AI analysis
+    """
+
+    def render_question(self, parent, analysis: dict, question_text: str,
+                       answers: list, question_number=None) -> bool:
+        """
+        Render question using appropriate component
+
+        Args:
+            parent: Parent widget for rendering
+            analysis: initial_analysis dict with rendering_strategy
+            question_text: The identified_question text
+            answers: List of answer objects
+            question_number: Optional question number
+
+        Returns:
+            True if rendered successfully, False to fallback to standard display
+        """
+        strategy = analysis.get('rendering_strategy', 'standard_fallback')
+
+        try:
+            if strategy == 'edmentum_hot_text':
+                return self._render_hot_text(parent, question_text, answers)
+            elif strategy in ('edmentum_matched_pairs', 'edmentum_matching_pairs'):
+                return self._render_matched_pairs(parent, question_text, answers)
+            elif strategy == 'edmentum_multiple_choice':
+                return self._render_multiple_choice(parent, question_text, answers)
+            elif strategy == 'edmentum_multiple_response':
+                return self._render_multiple_response(parent, question_text, answers)
+            elif strategy == 'edmentum_dropdown':
+                return self._render_dropdown(parent, question_text, answers)
+            elif strategy == 'standard_fallback':
+                return False  # Let standard display handle it
+            else:
+                print(f"⚠️ Unknown rendering strategy: {strategy}, using fallback")
+                return False
+
+        except Exception as e:
+            print(f"❌ Edmentum rendering failed for {strategy}: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def _render_hot_text(self, parent, question_text: str, answers: list) -> bool:
+        """Render hot text / text selection questions with green highlighting"""
+        try:
+            # Extract selected texts from answers
+            selected_texts = []
+            for answer in answers:
+                if answer.get('content_type') == 'text_selection' and answer.get('is_correct_option'):
+                    text_content = answer.get('text_content', '')
+                    if text_content:
+                        selected_texts.append(text_content)
+
+            if not selected_texts:
+                print("⚠️ No selected texts found for hot text question")
+                return False
+
+            # Create EdmentumHotText component
+            # The passage is embedded in question_text, selected_texts are the answers
+            EdmentumHotText(parent, question_text, question_text, selected_texts)
+            return True
+
+        except Exception as e:
+            print(f"❌ Hot text rendering failed: {e}")
+            return False
+
+    def _render_matched_pairs(self, parent, question_text: str, answers: list) -> bool:
+        """Render matching pairs questions"""
+        try:
+            # Extract pairs from answers
+            pairs = []
+            for answer in answers:
+                if answer.get('content_type') == 'matching_pair':
+                    pair_data = answer.get('pair_data', {})
+                    if pair_data:
+                        pairs.append({
+                            'term': pair_data.get('term', ''),
+                            'match': pair_data.get('match', ''),
+                            'is_correct': answer.get('is_correct_option', True)
+                        })
+
+            if not pairs:
+                print("⚠️ No matching pairs found")
+                return False
+
+            # Create EdmentumMatchedPairs component (note: class name has 'Matched' not 'Matching')
+            EdmentumMatchedPairs(parent, question_text, pairs)
+            return True
+
+        except Exception as e:
+            print(f"❌ Matching pairs rendering failed: {e}")
+            return False
+
+    def _render_multiple_choice(self, parent, question_text: str, answers: list) -> bool:
+        """Render multiple choice questions"""
+        try:
+            # Extract options
+            options = []
+            for answer in answers:
+                if answer.get('content_type') == 'multiple_choice_option':
+                    # Extract letter from answer_id (e.g., "mc_option_A" -> "A")
+                    answer_id = answer.get('answer_id', '')
+                    label = answer_id.replace('mc_option_', '').replace('_', ' ')
+
+                    options.append({
+                        'label': label if label else str(len(options) + 1),
+                        'text': answer.get('text_content', ''),
+                        'is_correct': answer.get('is_correct_option', False)
+                    })
+
+            if not options:
+                print("⚠️ No multiple choice options found")
+                return False
+
+            # Create EdmentumMultipleChoice component
+            EdmentumMultipleChoice(parent, question_text, options)
+            return True
+
+        except Exception as e:
+            print(f"❌ Multiple choice rendering failed: {e}")
+            return False
+
+    def _render_multiple_response(self, parent, question_text: str, answers: list) -> bool:
+        """Render multiple response (select all that apply) questions"""
+        # Multiple response is similar to multiple choice but allows multiple selections
+        # For display purposes, we can use the same EdmentumMultipleChoice component
+        # since it already shows correct answers highlighted
+        return self._render_multiple_choice(parent, question_text, answers)
+
+    def _render_dropdown(self, parent, question_text: str, answers: list) -> bool:
+        """Render dropdown/cloze questions"""
+        try:
+            # For now, return False to use standard display
+            # Full implementation would create EdmentumDropdown component with inline dropdowns
+            # This would require parsing the question_text for placeholders and filling them
+            print("ℹ️ Dropdown rendering not fully implemented, using standard display")
+            return False
+        except Exception as e:
+            print(f"❌ Dropdown rendering failed: {e}")
+            return False
+
+
+# ============================================================================
 # EXPORTS
 # ============================================================================
 
@@ -877,6 +1027,7 @@ __all__ = [
     'EdmentumDropdown',
     'EdmentumFillBlank',
     'EdmentumHotText',
+    'EdmentumQuestionRenderer',
     'create_circle_badge',
     'get_style'
 ]

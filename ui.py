@@ -38,9 +38,12 @@ except ImportError as e:
     PROGRESSIVE_PARSER_AVAILABLE = False
 
 # --- Edmentum Question Renderer ---
-# NOTE: EdmentumQuestionRenderer functionality is now integrated into edmentum_components.py
-# This module import is no longer needed - using EDMENTUM_COMPONENTS_AVAILABLE instead
-EDMENTUM_RENDERER_AVAILABLE = False  # Legacy flag, kept for compatibility
+try:
+    from edmentum_components import EdmentumQuestionRenderer
+    EDMENTUM_RENDERER_AVAILABLE = True
+except ImportError as e:
+    print(f"Note: Edmentum renderer not available: {e}")
+    EDMENTUM_RENDERER_AVAILABLE = False
 
 # --- Response Validator ---
 try:

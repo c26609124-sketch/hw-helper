@@ -1,6 +1,6 @@
 # Homework Helper AI - Complete Documentation
 
-**Latest Version**: v1.0.17 | **Auto-Update**: ✅ Enabled
+**Latest Version**: v1.0.18 | **Auto-Update**: ✅ Enabled | **Error Reporting**: 🤖 Automatic
 
 ## 🎯 Overview
 Homework Helper AI is an intelligent application that uses OpenRouter API to analyze homework questions from screenshots and provide detailed, formatted answers. It features advanced visual enhancements for drag-to-image questions, supports multiple question types, and includes an **automatic update system** that keeps your app current with the latest fixes and features.
@@ -34,6 +34,13 @@ python main.py
 - 📋 **Changelog Display**: Shows what's new in each update
 - ✅ **GitHub Integration**: Updates pulled directly from official repository
 - 🔒 **Safe Updates**: Backup system protects your existing files
+
+### Automatic Error Reporting (NEW v1.0.18)
+- 🤖 **Instant Reporting**: Errors automatically sent to developer via Discord
+- 📸 **Screenshot Included**: Current screenshot attached to error reports
+- 📋 **Full Context**: System info, logs, and stack traces included
+- ✅ **One-Click**: Just click "Report Error" button - no manual steps
+- 🔒 **Privacy**: Only error data and screenshot sent, no personal info
 
 ### Visual Enhancement
 - 📍 **Coordinate Detection**: Automatically identifies visual elements in drag-to-image questions
