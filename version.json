@@ -1,7 +1,17 @@
 {
-  "version": "1.0.3",
+  "version": "1.0.4",
   "release_date": "2025-10-29",
   "changelog": [
+    {
+      "version": "1.0.4",
+      "date": "2025-10-29",
+      "changes": [
+        "CRITICAL FIX: Update modal now visible during downloads",
+        "Fixed timing issue where modal appeared after download completed",
+        "Added 1-second render delay to ensure modal visibility",
+        "Improved modal focus and rendering reliability"
+      ]
+    },
     {
       "version": "1.0.3",
       "date": "2025-10-29",

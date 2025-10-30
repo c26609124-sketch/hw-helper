@@ -808,9 +808,16 @@ class HomeworkApp(ctk.CTk):
             # Create modal
             modal = UpdateModal(self, version, changelog)
 
-            # Start update in background thread
+            # Force modal to render and become visible
+            modal.update_idletasks()
+            modal.focus_force()
+
+            # Start update in background thread with delay
             def perform_update():
                 try:
+                    # Wait for modal to fully render and become visible (critical!)
+                    time.sleep(1.0)
+
                     # Progress callback
                     def on_progress(current, total, filename, percentage):
                         modal.update_progress(current, total, filename, percentage)
@@ -829,7 +836,7 @@ class HomeworkApp(ctk.CTk):
                     modal.mark_failed(f"Error: {str(e)}")
                     print(f"❌ Update error: {e}")
 
-            # Start update thread
+            # Start update thread after modal is fully rendered
             threading.Thread(target=perform_update, daemon=True).start()
 
         except Exception as e:
