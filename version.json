@@ -1,7 +1,23 @@
 {
-  "version": "1.0.8",
+  "version": "1.0.9",
   "release_date": "2025-10-30",
   "changelog": [
+    {
+      "version": "1.0.9",
+      "date": "2025-10-30",
+      "changes": [
+        "NEW: Colorful Apple emoji icons in Activity Log (🎉✅❌🔍📝🤖💡)",
+        "NEW: Base64-embedded 16x16px PNG emojis (instant loading, no downloads)",
+        "NEW: iOS-style segmented control for 2-step workflow (shared borders)",
+        "NEW: Progress indicator dots (● ○) showing current workflow step",
+        "NEW: Custom ActivityLogWidget with embedded image support",
+        "UPDATE: Simplified to 2-step workflow (Capture → AI Answer)",
+        "UPDATE: 40% more compact layout (segmented control replaces 5 buttons)",
+        "UPDATE: Separated utilities (Brave/Load) from primary workflow",
+        "UPDATE: Professional iOS-style appearance with touch-friendly buttons",
+        "FIX: Removed depressing Unicode symbols (✓✗◆↻) with vibrant emojis"
+      ]
+    },
     {
       "version": "1.0.8",
       "date": "2025-10-30",

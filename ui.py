@@ -133,120 +133,286 @@ except ImportError as e:
     run_brave_screenshot_task = run_brave_screenshot_task_stub
 
 
-class StdoutRedirector:
-    """Enhanced stdout redirector with colored symbols replacing emojis"""
+# ============================================================================
+# EMOJI ICON SYSTEM FOR ACTIVITY LOG
+# ============================================================================
 
-    # Emoji to colored symbol mapping
-    EMOJI_MAP = {
-        # Success/Completion (Green)
-        '🎉': ('●', 'SUCCESS'),
-        '✅': ('✓', 'SUCCESS'),
-        '✓': ('✓', 'SUCCESS'),
-        '✔': ('✓', 'SUCCESS'),
-        '🧹': ('✓', 'SUCCESS'),
+# Base64-encoded 16x16px emoji-style icons (colorful circles with symbols)
+# These are simple, colorful representations that work across all platforms
+EMOJI_IMAGE_DATA = {
+    # Success/Completion (Green circle with checkmark)
+    '🎉': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA1ElEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMQAFP+B9P8BeICRkZHh/38GRkYGBgY0F/z/z8jIyPD/PwMDyBCG//8Z/jMgAf7/jCBNOFwAdhKGA6CY5v9/sJiB4T9YjAmFzdDnMMD5gDFBrAAAAP//7FCCLkRNm44AAAAASUVORK5CYII=',
+    '✅': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA1ElEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMQAFP+B9P8BeICRkZHh/38GRkYGBgY0F/z/z8jIyPD/PwMDyBCG//8Z/jMgAf7/jCBNOFwAdhKGA6CY5v9/sJiB4T9YjAmFzdDnMMD5gDFBrAAAAP//7FCCLkRNm44AAAAASUVORK5CYII=',
+    '🧹': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA1ElEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMQAFP+B9P8BeICRkZHh/38GRkYGBgY0F/z/z8jIyPD/PwMDyBCG//8Z/jMgAf7/jCBNOFwAdhKGA6CY5v9/sJiB4T9YjAmFzdDnMMD5gDFBrAAAAP//7FCCLkRNm44AAAAASUVORK5CYII=',
 
-        # Error/Critical (Red)
-        '❌': ('✗', 'ERROR'),
-        '✗': ('✗', 'ERROR'),
-        '🚨': ('!', 'CRITICAL'),
-        '⚠️': ('!', 'WARNING'),
+    # Error (Red circle with X)
+    '❌': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA4ElEQVR4nGNgYGBgaF338D8DA8P//wwMDAwMDAwM//8z/P/PwPCfgYH5////DAwMDAz///9nALH///8PZjP8Z2AEMQE0SvgPphj+/2dgBNH/odj4f7Bm/v8MDAxQjf//M4DUIovBNDH8/w+ikQEjAwM6+P+fgZGREUwj2/IfQmM1AOw0FDeAaWIt//+D+GhiDAwMYBdA5f//R/bgf6Cm//8ZQJpQDUB1gfEBYgLQdmSDsYX/0GBEDzCG//8ZkF2AFsAMYECLBBwugKYHBiAGMKC5AOYNsAEMDIwMDAwMDP//MzL+Z2D4/x8AYRKnXVu5FMwAAAAASUVORK5CYII=',
+    '🚨': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA3UlEQVR4nGNgYGBgaF338D8DA8N/BgYGBgYGhv//Gf7/Z2D4z8DA/P////8ZGBgYGP7//w9mM/xnYAQxATRK+A+mGP7/Z2AE0f+h2Ph/sGb+/wwMDFCN//8zgNQii8E0Mfz/D6KRASMDAzr4/5+BkZERTCPb8h9CYzUA7DQUN4BpYi3//4P4aGIMDAxgF0Dl//9H9uB/oKb//xlAmlANQHWB8QFiAtB2ZIOxhf/QYEQPMIb//xmQXYAWwAxgQIsEHC6ApgcGIAYwoLkA5g2wAQwMjAwMDAwM//8zMv5nYPj/HwC8VqYT7De3PQAAAABJRU5ErkJggg==',
+    '⚠️': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA6ElEQVR4nGNgYGBgaF338D8DA8P//wwMDAwMDP//M/z/z8Dwn4GB+f////8zMDAwMPz//x/MZvjPwAhiAmiU8B9MMfz/z8AIov9DsfH/YM38/xkYGKAa//9nAKlFFoNpYvj/H0QjA0YGBnTw/z8DIyMjmEa25T+ExmoA2GkobgDTxFr+/wfx0cQYGBjALoDK//+P7MH/QE3//zOANKEagOoC4wPEBKDtyAZjC/+hwYgeYAz//zMguwAtgBnAgBYJOFwATQ8MQAxgQHMBzBtgAxgYGBkYGBgY/v9nZPzPwPD/PwCBuaF5XxOWowAAAABJRU5ErkJggg==',
 
-        # Info/Process (Blue)
-        '🔍': ('◆', 'INFO_BLUE'),
-        '📝': ('◆', 'INFO_BLUE'),
-        '📜': ('◆', 'INFO_BLUE'),
-        '📋': ('◆', 'INFO_BLUE'),
-        '🎨': ('◆', 'INFO_BLUE'),
-        '🔧': ('◆', 'INFO_BLUE'),
-        '⚡': ('◆', 'INFO_BLUE'),
-        '🚀': ('◆', 'INFO_BLUE'),
-        '📁': ('◆', 'INFO_BLUE'),
+    # Info/Process (Blue circle with i)
+    '🔍': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
+    '📝': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
+    '📋': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
+    '🎨': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
+    '🔧': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
+    '⚡': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
+    '🚀': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
+    '📁': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
 
-        # Progress/Status (Cyan)
-        '🔄': ('↻', 'INFO_CYAN'),
-        '⏳': ('⋯', 'INFO_CYAN'),
-        '💾': ('▸', 'INFO_CYAN'),
-        '⬇️': ('↓', 'INFO_CYAN'),
+    # Progress/Status (Cyan circle with arrow)
+    '🔄': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA3ElEQVR4nGNgYGBgaF338D8DA8P//wwMDAwMDP//M/z/z8Dwn4GB+f////8zMDAwMPz//x/MZvjPwAhiAmiU8B9MMfz/z8AIov9DsfH/YM38/xkYGKAa//9nAKlFFoNpYvj/H0QjA0YGBnTw/z8DIyMjmEa25T+ExmoA2GkobgDTxFr+/wfx0cQYGBjALoDK//+P7MH/QE3//zOANKEagOoC4wPEBKDtyAZjC/+hwYgeYAz//zMguwAtgBnAgBYJOFwATQ8MQAxgQHMBzBtgAxgYGBkYGBgY/v9nZPzPwPD/PwCjkqVEg/lxhgAAAABJRU5ErkJggg==',
+    '⏳': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA3ElEQVR4nGNgYGBgaF338D8DA8P//wwMDAwMDP//M/z/z8Dwn4GB+f////8zMDAwMPz//x/MZvjPwAhiAmiU8B9MMfz/z8AIov9DsfH/YM38/xkYGKAa//9nAKlFFoNpYvj/H0QjA0YGBnTw/z8DIyMjmEa25T+ExmoA2GkobgDTxFr+/wfx0cQYGBjALoDK//+P7MH/QE3//zOANKEagOoC4wPEBKDtyAZjC/+hwYgeYAz//zMguwAtgBnAgBYJOFwATQ8MQAxgQHMBzBtgAxgYGBkYGBgY/v9nZPzPwPD/PwCjkqVEg/lxhgAAAABJRU5ErkJggg==',
+    '💾': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA3ElEQVR4nGNgYGBgaF338D8DA8P//wwMDAwMDP//M/z/z8Dwn4GB+f////8zMDAwMPz//x/MZvjPwAhiAmiU8B9MMfz/z8AIov9DsfH/YM38/xkYGKAa//9nAKlFFoNpYvj/H0QjA0YGBnTw/z8DIyMjmEa25T+ExmoA2GkobgDTxFr+/wfx0cQYGBjALoDK//+P7MH/QE3//zOANKEagOoC4wPEBKDtyAZjC/+hwYgeYAz//zMguwAtgBnAgBYJOFwATQ8MQAxgQHMBzBtgAxgYGBkYGBgY/v9nZPzPwPD/PwCjkqVEg/lxhgAAAABJRU5ErkJggg==',
+    '⬇️': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA3ElEQVR4nGNgYGBgaF338D8DA8P//wwMDAwMDP//M/z/z8Dwn4GB+f////8zMDAwMPz//x/MZvjPwAhiAmiU8B9MMfz/z8AIov9DsfH/YM38/xkYGKAa//9nAKlFFoNpYvj/H0QjA0YGBnTw/z8DIyMjmEa25T+ExmoA2GkobgDTxFr+/wfx0cQYGBjALoDK//+P7MH/QE3//zOANKEagOoC4wPEBKDtyAZjC/+hwYgeYAz//zMguwAtgBnAgBYJOFwATQ8MQAxgQHMBzBtgAxgYGBkYGBgY/v9nZPzPwPD/PwCjkqVEg/lxhgAAAABJRU5ErkJggg==',
 
-        # Special (Purple)
-        '🤖': ('◇', 'INFO_PURPLE'),
-        '💡': ('◇', 'INFO_PURPLE'),
-    }
+    # Special/AI (Purple circle with sparkle)
+    '🤖': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA4klEQVR4nGNgYGBgaF338D8DA8P//wwMDAwMDP//M/z/z8Dwn4GB+f////8zMDAwMPz//x/MZvjPwAhiAmiU8B9MMfz/z8AIov9DsfH/YM38/xkYGKAa//9nAKlFFoNpYvj/H0QjA0YGBnTw/z8DIyMjmEa25T+ExmoA2GkobgDTxFr+/wfx0cQYGBjALoDK//+P7MH/QE3//zOANKEagOoC4wPEBKDtyAZjC/+hwYgeYAz//zMguwAtgBnAgBYJOFwATQ8MQAxgQHMBzBtgAxgYGBkYGBgY/v9nZPzPwPD/PwDNB6hO6ynWPgAAAABJRU5ErkJggg==',
+    '💡': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA4klEQVR4nGNgYGBgaF338D8DA8P//wwMDAwMDP//M/z/z8Dwn4GB+f////8zMDAwMPz//x/MZvjPwAhiAmiU8B9MMfz/z8AIov9DsfH/YM38/xkYGKAa//9nAKlFFoNpYvj/H0QjA0YGBnTw/z8DIyMjmEa25T+ExmoA2GkobgDTxFr+/wfx0cQYGBjALoDK//+P7MH/QE3//zOANKEagOoC4wPEBKDtyAZjC/+hwYgeYAz//zMguwAtgBnAgBYJOFwATQ8MQAxgQHMBzBtgAxgYGBkYGBgY/v9nZPzPwPD/PwDNB6hO6ynWPgAAAABJRU5ErkJggg==',
+    '📜': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
+}
 
-    def __init__(self, text_widget, app_instance):
-        self.text_widget = text_widget
-        self.app = app_instance
-        self.text_widget.configure(state='disabled')
+# Emoji to color tag mapping
+EMOJI_COLORS = {
+    '🎉': 'SUCCESS', '✅': 'SUCCESS', '🧹': 'SUCCESS',
+    '❌': 'ERROR', '🚨': 'CRITICAL',
+    '⚠️': 'WARNING',
+    '🔍': 'INFO_BLUE', '📝': 'INFO_BLUE', '📋': 'INFO_BLUE', '🎨': 'INFO_BLUE',
+    '🔧': 'INFO_BLUE', '⚡': 'INFO_BLUE', '🚀': 'INFO_BLUE', '📁': 'INFO_BLUE', '📜': 'INFO_BLUE',
+    '🔄': 'INFO_CYAN', '⏳': 'INFO_CYAN', '💾': 'INFO_CYAN', '⬇️': 'INFO_CYAN',
+    '🤖': 'INFO_PURPLE', '💡': 'INFO_PURPLE',
+}
 
-        # Configure color tags (CTkTextbox doesn't allow font in tags)
-        self.text_widget.tag_config("TIMESTAMP", foreground="gray60")
-        self.text_widget.tag_config("ERROR", foreground="#E74C3C")
-        self.text_widget.tag_config("CRITICAL", foreground="#C0392B")
-        self.text_widget.tag_config("WARNING", foreground="#F39C12")
-        self.text_widget.tag_config("SUCCESS", foreground="#2ECC71")
-        self.text_widget.tag_config("INFO_BLUE", foreground="#3498DB")
-        self.text_widget.tag_config("INFO_CYAN", foreground="#1ABC9C")
-        self.text_widget.tag_config("INFO_PURPLE", foreground="#9B59B6")
-        self.text_widget.tag_config("DEBUG", foreground="#95A5A6")
+# Color values for text
+COLOR_VALUES = {
+    'SUCCESS': '#2ECC71',
+    'ERROR': '#E74C3C',
+    'CRITICAL': '#C0392B',
+    'WARNING': '#F39C12',
+    'INFO_BLUE': '#3498DB',
+    'INFO_CYAN': '#1ABC9C',
+    'INFO_PURPLE': '#9B59B6',
+    'TIMESTAMP': 'gray60',
+}
 
-        # Default info color (adaptive to theme)
-        try:
-            current_theme_mode = ctk.get_appearance_mode()
-            if current_theme_mode == "Dark":
-                info_fg_color = ctk.ThemeManager.theme.get("CTkLabel", {}).get("text_color", [None, "gray85"])[1]
+
+class ActivityLogWidget(ctk.CTkScrollableFrame):
+    """Custom activity log with emoji icons and colored text"""
+
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, **kwargs)
+        self.emoji_images = {}  # Cache loaded images
+        self._load_emoji_images()
+
+    def _load_emoji_images(self):
+        """Load base64 emoji images into PIL/ImageTk format"""
+        import io
+        from PIL import Image
+
+        for emoji, b64_data in EMOJI_IMAGE_DATA.items():
+            try:
+                image_data = base64.b64decode(b64_data)
+                pil_image = Image.open(io.BytesIO(image_data))
+                # Resize to 16x16 if needed
+                if pil_image.size != (16, 16):
+                    pil_image = pil_image.resize((16, 16), Image.LANCZOS)
+                # Convert to CTkImage
+                ctk_image = ctk.CTkImage(light_image=pil_image, dark_image=pil_image, size=(16, 16))
+                self.emoji_images[emoji] = ctk_image
+            except Exception as e:
+                print(f"Failed to load emoji {emoji}: {e}")
+
+    def add_log(self, message: str, emoji: str = None):
+        """Add a log entry with optional emoji icon"""
+        # Detect emoji from message start if not provided
+        if not emoji:
+            for emoji_char in EMOJI_COLORS.keys():
+                if message.startswith(emoji_char):
+                    emoji = emoji_char
+                    message = message[len(emoji_char):].lstrip()
+                    break
+
+        # Create log entry frame
+        entry_frame = ctk.CTkFrame(self, fg_color="transparent", height=20)
+        entry_frame.pack(fill="x", pady=1, padx=2)
+        entry_frame.pack_propagate(False)
+
+        # Timestamp
+        timestamp = time.strftime("[%H:%M:%S]")
+        timestamp_label = ctk.CTkLabel(
+            entry_frame,
+            text=timestamp,
+            font=("Consolas", 10),
+            text_color=COLOR_VALUES['TIMESTAMP'],
+            width=70,
+            anchor="w"
+        )
+        timestamp_label.pack(side="left", padx=(2, 5))
+
+        # Emoji icon
+        if emoji and emoji in self.emoji_images:
+            emoji_label = ctk.CTkLabel(
+                entry_frame,
+                text="",
+                image=self.emoji_images[emoji],
+                width=18
+            )
+            emoji_label.pack(side="left", padx=(0, 5))
+
+        # Message text
+        color_tag = EMOJI_COLORS.get(emoji, 'INFO_BLUE')
+        text_color = COLOR_VALUES.get(color_tag, COLOR_VALUES['INFO_BLUE'])
+
+        message_label = ctk.CTkLabel(
+            entry_frame,
+            text=message,
+            font=("Consolas", 10),
+            text_color=text_color,
+            anchor="w",
+            justify="left"
+        )
+        message_label.pack(side="left", fill="x", expand=True)
+
+        # Auto-scroll to bottom
+        self.after(10, lambda: self._parent_canvas.yview_moveto(1.0))
+
+    def clear(self):
+        """Clear all log entries"""
+        for widget in self.winfo_children():
+            widget.destroy()
+
+
+class SegmentedControl(ctk.CTkFrame):
+    """iOS-style segmented control for workflow buttons"""
+
+    def __init__(self, parent, buttons: List[Dict], **kwargs):
+        super().__init__(parent, fg_color="transparent", **kwargs)
+
+        self.buttons = buttons
+        self.button_widgets = []
+        self._create_buttons()
+
+    def _create_buttons(self):
+        """Create segmented buttons with iOS styling"""
+        num_buttons = len(self.buttons)
+
+        for i, button_config in enumerate(self.buttons):
+            # Determine corner rounding
+            if num_buttons == 1:
+                corner_radius = 8
+            elif i == 0:
+                # First button: rounded left only
+                corner_radius = (8, 0, 0, 8)
+            elif i == num_buttons - 1:
+                # Last button: rounded right only
+                corner_radius = (0, 8, 8, 0)
             else:
-                info_fg_color = ctk.ThemeManager.theme.get("CTkLabel", {}).get("text_color", ["gray10", None])[0]
-            if info_fg_color is None:
-                info_fg_color = "gray85" if current_theme_mode == "Dark" else "gray10"
-        except Exception:
-            info_fg_color = "gray85" if ctk.get_appearance_mode() == "Dark" else "gray10"
+                # Middle buttons: no rounding
+                corner_radius = 0
 
-        self.text_widget.tag_config("INFO", foreground=info_fg_color)
+            # Create button
+            btn = ctk.CTkButton(
+                self,
+                text=button_config.get("text", ""),
+                command=button_config.get("command", None),
+                height=44,
+                font=("Segoe UI", 12, "bold"),
+                fg_color=button_config.get("color", "#3498DB"),
+                hover_color=self._darken_color(button_config.get("color", "#3498DB")),
+                corner_radius=corner_radius if isinstance(corner_radius, int) else 8,
+                border_width=1,
+                border_color=("gray70", "gray30"),
+                state=button_config.get("state", "normal")
+            )
 
-    def _replace_emojis(self, text):
-        """Replace emojis with colored symbols and return (processed_text, tag)"""
-        # Check if text starts with an emoji we want to replace
-        for emoji, (symbol, tag) in self.EMOJI_MAP.items():
-            if text.startswith(emoji):
-                # Replace emoji with symbol and return the appropriate tag
-                return symbol + text[len(emoji):], tag
+            # Pack with no padding between buttons
+            btn.pack(side="left", fill="both", expand=True, padx=(0 if i > 0 else 0, 0))
+            self.button_widgets.append(btn)
 
-        return text, None
+    def _darken_color(self, hex_color: str, amount: float = 0.15) -> str:
+        """Darken a hex color by a percentage"""
+        try:
+            # Remove # if present
+            hex_color = hex_color.lstrip('#')
+            # Convert to RGB
+            r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+            # Darken
+            r = max(0, int(r * (1 - amount)))
+            g = max(0, int(g * (1 - amount)))
+            b = max(0, int(b * (1 - amount)))
+            # Convert back to hex
+            return f"#{r:02x}{g:02x}{b:02x}"
+        except:
+            return hex_color
+
+    def set_button_state(self, index: int, state: str):
+        """Enable/disable a button by index"""
+        if 0 <= index < len(self.button_widgets):
+            self.button_widgets[index].configure(state=state)
+
+
+class WorkflowProgressDots(ctk.CTkFrame):
+    """Progress indicator dots for 2-step workflow"""
+
+    def __init__(self, parent, num_steps: int = 2, **kwargs):
+        super().__init__(parent, fg_color="transparent", **kwargs)
+
+        self.num_steps = num_steps
+        self.current_step = 0
+        self.dot_labels = []
+        self._create_dots()
+
+    def _create_dots(self):
+        """Create progress dots"""
+        for i in range(self.num_steps):
+            dot_label = ctk.CTkLabel(
+                self,
+                text="●" if i == 0 else "○",
+                font=("Arial", 16),
+                text_color="#3498DB" if i == 0 else "gray60",
+                width=20
+            )
+            dot_label.pack(side="left", padx=3)
+            self.dot_labels.append(dot_label)
+
+    def set_step(self, step: int):
+        """Update which step is current (0-indexed)"""
+        if 0 <= step < self.num_steps:
+            self.current_step = step
+            for i, dot_label in enumerate(self.dot_labels):
+                if i == step:
+                    dot_label.configure(text="●", text_color="#3498DB")
+                else:
+                    dot_label.configure(text="○", text_color="gray60")
+
+
+class StdoutRedirector:
+    """Stdout redirector that routes print() to ActivityLogWidget with emoji icons"""
+
+    def __init__(self, activity_log_widget, app_instance):
+        self.activity_log = activity_log_widget
+        self.app = app_instance
 
     def write(self, string):
-        self.app.after(0, self._write_to_widget, string)
+        """Write output to activity log"""
+        self.app.after(0, self._write_to_log, string)
 
-    def _write_to_widget(self, string):
-        self.text_widget.configure(state='normal')
+    def _write_to_log(self, string):
+        """Add message to activity log with emoji detection"""
+        # Skip empty strings and newlines
+        if not string or string == '\n':
+            return
 
-        # Add timestamp
-        timestamp = time.strftime("[%H:%M:%S] ")
-        self.text_widget.insert(ctk.END, timestamp, ("TIMESTAMP",))
+        # Clean string
+        message = string.strip()
+        if not message:
+            return
 
-        # Replace emojis and determine tag
-        processed_string, emoji_tag = self._replace_emojis(string)
-
-        # Determine tag based on content or emoji
-        if emoji_tag:
-            tag_to_apply = emoji_tag
-        else:
-            lower_string = processed_string.lower()
-            if "error" in lower_string or "failed" in lower_string or "traceback" in lower_string or "exception" in lower_string:
-                tag_to_apply = "ERROR"
-            elif "critical" in lower_string:
-                tag_to_apply = "CRITICAL"
-            elif "warning" in lower_string:
-                tag_to_apply = "WARNING"
-            elif processed_string.startswith("DEBUG: "):
-                tag_to_apply = "DEBUG"
-            else:
-                tag_to_apply = "INFO"
-
-        self.text_widget.insert(ctk.END, processed_string, (tag_to_apply,))
-        self.text_widget.see(ctk.END)
-        self.text_widget.configure(state='disabled')
+        # The ActivityLogWidget will automatically detect and handle emojis
+        self.activity_log.add_log(message)
 
     def flush(self):
+        """Required for sys.stdout compatibility"""
         pass
 
 HANDLE_SIZE = 10
@@ -786,13 +952,72 @@ class HomeworkApp(ctk.CTk):
         self.left_panel.grid(row=0, column=0, sticky="nsew", padx=(10,5), pady=10)
         self.left_panel.grid_propagate(False); self.left_panel.grid_columnconfigure(0, weight=1)
         self.left_panel.grid_rowconfigure(0, weight=0); self.left_panel.grid_rowconfigure(1, weight=0); self.left_panel.grid_rowconfigure(2, weight=0); self.left_panel.grid_rowconfigure(3, weight=1, minsize=150)
-        button_frame = ctk.CTkFrame(self.left_panel, fg_color="transparent"); button_frame.grid(row=0, column=0, sticky="new", padx=10, pady=(10, 10)); button_frame.grid_columnconfigure(0, weight=1)
-        button_font = ("Segoe UI", 11, "bold"); button_height = 32; button_corner_radius = 6
-        self.launch_brave_button = ctk.CTkButton(button_frame, text="🚀 Launch Brave Browser", command=self.launch_brave_with_debugging, height=button_height, font=button_font, corner_radius=button_corner_radius, fg_color=("#FF8C00", "#FF6347"), hover_color=("#FF7F50", "#FF4500")); self.launch_brave_button.grid(row=0, column=0, padx=0, pady=6, sticky="ew")
-        self.load_screenshot_button = ctk.CTkButton(button_frame, text="📁 Load Screenshot", command=self.load_saved_screenshot, height=button_height, font=button_font, corner_radius=button_corner_radius, fg_color=("#4A90E2", "#2A5298"), hover_color=("#357ABD", "#1F4788")); self.load_screenshot_button.grid(row=1, column=0, padx=0, pady=6, sticky="ew")
-        self.capture_button = ctk.CTkButton(button_frame, text="1. Capture Question", command=self.start_capture_thread, height=button_height, font=button_font, corner_radius=button_corner_radius); self.capture_button.grid(row=2, column=0, padx=0, pady=6, sticky="ew")
-        self.recrop_button = ctk.CTkButton(button_frame, text="2. Apply Re-crop", command=self.trigger_recrop, state="disabled", height=button_height, font=button_font, corner_radius=button_corner_radius, fg_color=("gray70", "gray25"), hover_color=("gray60", "gray35")); self.recrop_button.grid(row=3, column=0, padx=0, pady=6, sticky="ew")
-        self.ai_button = ctk.CTkButton(button_frame, text="3. Get AI Answer", command=self.start_ai_thread, state="disabled", height=button_height, font=button_font, corner_radius=button_corner_radius); self.ai_button.grid(row=4, column=0, padx=0, pady=6, sticky="ew")
+        # === NEW BUTTON LAYOUT (v1.0.9) ===
+        button_container = ctk.CTkFrame(self.left_panel, fg_color="transparent")
+        button_container.grid(row=0, column=0, sticky="new", padx=10, pady=(10, 10))
+        button_container.grid_columnconfigure(0, weight=1)
+
+        # Primary Workflow - Segmented Control (2 steps)
+        workflow_buttons = [
+            {
+                "text": "1️⃣ Capture Question",
+                "command": self.start_capture_thread,
+                "color": "#3498DB",  # Blue
+                "state": "normal"
+            },
+            {
+                "text": "2️⃣ Get AI Answer",
+                "command": self.start_ai_thread,
+                "color": "#2ECC71",  # Green
+                "state": "disabled"
+            }
+        ]
+
+        self.workflow_control = SegmentedControl(button_container, workflow_buttons)
+        self.workflow_control.pack(fill="x", pady=(0, 5))
+
+        # Store button references for easy access
+        self.capture_button = self.workflow_control.button_widgets[0]
+        self.ai_button = self.workflow_control.button_widgets[1]
+
+        # Progress dots
+        self.progress_dots = WorkflowProgressDots(button_container, num_steps=2)
+        self.progress_dots.pack(pady=(3, 10))
+
+        # Utility Buttons (smaller, de-emphasized)
+        utility_frame = ctk.CTkFrame(button_container, fg_color="transparent")
+        utility_frame.pack(fill="x", pady=(5, 0))
+        utility_frame.grid_columnconfigure(0, weight=1)
+        utility_frame.grid_columnconfigure(1, weight=1)
+
+        utility_font = ("Segoe UI", 10)
+        utility_height = 32
+
+        self.launch_brave_button = ctk.CTkButton(
+            utility_frame,
+            text="🚀 Brave",
+            command=self.launch_brave_with_debugging,
+            height=utility_height,
+            font=utility_font,
+            corner_radius=6,
+            fg_color=("#FF8C00", "#FF6347"),
+            hover_color=("#FF7F50", "#FF4500")
+        )
+        self.launch_brave_button.grid(row=0, column=0, padx=(0, 5), pady=0, sticky="ew")
+
+        self.load_screenshot_button = ctk.CTkButton(
+            utility_frame,
+            text="📁 Load",
+            command=self.load_saved_screenshot,
+            height=utility_height,
+            font=utility_font,
+            corner_radius=6,
+            fg_color=("#4A90E2", "#2A5298"),
+            hover_color=("#357ABD", "#1F4788")
+        )
+        self.load_screenshot_button.grid(row=0, column=1, padx=(5, 0), pady=0, sticky="ew")
+
+        # Re-crop button will be added dynamically to screenshot area (not here)
         settings_outer_frame = ctk.CTkFrame(self.left_panel); settings_outer_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=(10,5)); settings_outer_frame.grid_columnconfigure(0, weight=1)
         
         # Settings header with inline usage stats
@@ -830,7 +1055,14 @@ class HomeworkApp(ctk.CTk):
         self.save_settings_button = ctk.CTkButton(settings_outer_frame, text="Save Settings", command=self.save_config, height=30, font=("Segoe UI", 12)); self.save_settings_button.pack(pady=(10,10), padx=10, fill="x")
         
         self.log_label = ctk.CTkLabel(self.left_panel, text="Activity Log", font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold")); self.log_label.grid(row=2, column=0, padx=10, pady=(10,2), sticky="nw")
-        self.log_textbox = ctk.CTkTextbox(self.left_panel, wrap="word", state="disabled", font=("Consolas", 10), border_width=1, border_color=("gray80", "gray25")); self.log_textbox.grid(row=3, column=0, sticky="nsew", padx=10, pady=(0,10))
+
+        # New Activity Log Widget with emoji icons (v1.0.9)
+        self.activity_log = ActivityLogWidget(
+            self.left_panel,
+            border_width=1,
+            border_color=("gray80", "gray25")
+        )
+        self.activity_log.grid(row=3, column=0, sticky="nsew", padx=10, pady=(0,10))
         
         # Auto-check balance
         threading.Thread(target=self.refresh_account_balance, daemon=True).start()
@@ -853,7 +1085,9 @@ class HomeworkApp(ctk.CTk):
         self.answer_list_label = ctk.CTkLabel(self.answer_list_frame, text="AI Generated Answers", font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold")); self.answer_list_label.grid(row=0, column=0, padx=0, pady=(5,5), sticky="nw")
         self.answer_scroll_frame = ctk.CTkScrollableFrame(self.answer_list_frame, border_width=1, border_color=("gray80", "gray25")); self.answer_scroll_frame.grid(row=1, column=0, sticky="nsew"); self.answer_scroll_frame.grid_columnconfigure(0, weight=1)
         self.initial_answer_message = ctk.CTkLabel(self.answer_scroll_frame, text="Answers will appear here.", text_color=("gray60", "gray40")); self.initial_answer_message.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
-        sys.stdout = StdoutRedirector(self.log_textbox, self); sys.stderr = StdoutRedirector(self.log_textbox, self)
+        # Redirect stdout/stderr to Activity Log (v1.0.9)
+        sys.stdout = StdoutRedirector(self.activity_log, self)
+        sys.stderr = StdoutRedirector(self.activity_log, self)
 
         if not SELENIUM_SCRIPT_AVAILABLE: print("NOTE: Running in STUB mode for screenshots.")
         if not AVAILABLE_MODELS: print("ERROR: No suitable AI models are configured..."); self.ai_button.configure(state="disabled", text="AI Model Error")
@@ -1348,6 +1582,7 @@ class HomeworkApp(ctk.CTk):
 
     def start_capture_thread(self):
         self.capture_button.configure(state="disabled", text="Capturing..."); self._update_screenshot_display(None)
+        self.progress_dots.set_step(0)  # Reset to step 1
         self.current_dropdown_data = []; self._clear_answers(); self._update_answer_textbox("Waiting for screenshot...", placeholder=True)
         threading.Thread(target=self._run_capture_task_in_thread, args=(run_brave_screenshot_task,)).start()
 
@@ -1372,7 +1607,7 @@ class HomeworkApp(ctk.CTk):
                 else: final_error_message += " (Task returned unexpected data or None)."
                 self.after(0, self._update_screenshot_display, None, final_error_message); self.current_image_path=None; self.original_pil_image_for_crop=None; self.current_dropdown_data=[]
         except Exception as e: print(f"Error in capture task thread: {e}\n"); traceback.print_exc(); self.after(0, self._update_screenshot_display, None, f"Capture error: {e}"); self.current_image_path=None; self.original_pil_image_for_crop=None; self.current_dropdown_data=[]
-        finally: self.after(0, lambda: self.capture_button.configure(state="normal", text="1. Capture Question"))
+        finally: self.after(0, lambda: self.capture_button.configure(state="normal", text="1️⃣ Capture Question"))
 
     def _update_screenshot_display(self, pil_image_to_display: Image.Image = None, message: str = None): # type: ignore
         try:
@@ -1397,7 +1632,7 @@ class HomeworkApp(ctk.CTk):
             disp_w, disp_h = max(1, int(disp_w)), max(1, int(disp_h)); self.displayed_ctk_image_size = (disp_w, disp_h)
             resized_img = pil_image_to_display.resize(self.displayed_ctk_image_size, Image.Resampling.LANCZOS); new_ctk_image = ctk.CTkImage(light_image=resized_img, dark_image=resized_img, size=self.displayed_ctk_image_size)
             self.screenshot_image_label.configure(image=new_ctk_image, text=""); self.screenshot_image_label.image = new_ctk_image; self._hide_crop_visuals() # type: ignore
-            if self.current_image_path and os.path.exists(self.current_image_path) and self.screenshot_image_label.image is not None: self.ai_button.configure(state="normal") # type: ignore
+            if self.current_image_path and os.path.exists(self.current_image_path) and self.screenshot_image_label.image is not None: self.ai_button.configure(state="normal"); self.progress_dots.set_step(1) # type: ignore
             else: self.ai_button.configure(state="disabled")
         except tkinter.TclError as tcl_err: print(f"TCL Error: {tcl_err}\n"); traceback.print_exc();
         except Exception as e: print(f"General Error in _update_screenshot_display: {e}\n"); traceback.print_exc();
@@ -3549,7 +3784,7 @@ If any part of the question or an answer involves a numeric value that you canno
             success = self._render_edmentum_question(analysis, processed_data)
             if success:
                 print("✓ Edmentum rendering successful")
-                self.ai_button.configure(state="normal", text="3. Get AI Answer")
+                self.ai_button.configure(state="normal", text="2️⃣ Get AI Answer")
                 # Auto-scroll to answers
                 self.after(200, self._auto_scroll_to_answers)
                 return
@@ -3561,7 +3796,7 @@ If any part of the question or an answer involves a numeric value that you canno
 
         # Standard display (fallback)
         self.display_ai_answers(processed_data)
-        self.ai_button.configure(state="normal", text="3. Get AI Answer")
+        self.ai_button.configure(state="normal", text="2️⃣ Get AI Answer")
 
         # Auto-scroll to answers
         self.after(200, self._auto_scroll_to_answers)
