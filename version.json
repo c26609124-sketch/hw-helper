@@ -1,7 +1,21 @@
 {
-  "version": "1.0.14",
+  "version": "1.0.15",
   "release_date": "2025-10-30",
   "changelog": [
+    {
+      "version": "1.0.15",
+      "date": "2025-10-30",
+      "changes": [
+        "NEW: Real PNG icon files for Activity Log (no more emoji rendering issues!)",
+        "NEW: Error reporting system with 'Report Error' button",
+        "NEW: One-click error report generation (saves JSON + copies to clipboard)",
+        "NEW: IconManager class for loading and caching icon files",
+        "FIX: Replaced text emojis with actual 16x16 PNG icon files",
+        "FIX: Button text now uses circled numbers (① ②) instead of emoji",
+        "UPDATE: Icons bundled in /icons directory (8 PNG files)",
+        "UPDATE: Graceful fallback to colored symbols if icons missing"
+      ]
+    },
     {
       "version": "1.0.14",
       "date": "2025-10-30",

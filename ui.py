@@ -131,42 +131,134 @@ except ImportError as e:
 
 
 # ============================================================================
-# EMOJI ICON SYSTEM FOR ACTIVITY LOG
+# ICON SYSTEM FOR ACTIVITY LOG
 # ============================================================================
 
-# Base64-encoded 16x16px emoji-style icons (colorful circles with symbols)
-# These are simple, colorful representations that work across all platforms
-EMOJI_IMAGE_DATA = {
-    # Success/Completion (Green circle with checkmark)
-    '🎉': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA1ElEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMQAFP+B9P8BeICRkZHh/38GRkYGBgY0F/z/z8jIyPD/PwMDyBCG//8Z/jMgAf7/jCBNOFwAdhKGA6CY5v9/sJiB4T9YjAmFzdDnMMD5gDFBrAAAAP//7FCCLkRNm44AAAAASUVORK5CYII=',
-    '✅': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA1ElEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMQAFP+B9P8BeICRkZHh/38GRkYGBgY0F/z/z8jIyPD/PwMDyBCG//8Z/jMgAf7/jCBNOFwAdhKGA6CY5v9/sJiB4T9YjAmFzdDnMMD5gDFBrAAAAP//7FCCLkRNm44AAAAASUVORK5CYII=',
-    '🧹': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA1ElEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMQAFP+B9P8BeICRkZHh/38GRkYGBgY0F/z/z8jIyPD/PwMDyBCG//8Z/jMgAf7/jCBNOFwAdhKGA6CY5v9/sJiB4T9YjAmFzdDnMMD5gDFBrAAAAP//7FCCLkRNm44AAAAASUVORK5CYII=',
+class IconManager:
+    """Manages loading and caching of icon files"""
 
-    # Error (Red circle with X)
-    '❌': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA4ElEQVR4nGNgYGBgaF338D8DA8P//wwMDAwMDAwM//8z/P/PwPCfgYH5////DAwMDAz///9nALH///8PZjP8Z2AEMQE0SvgPphj+/2dgBNH/odj4f7Bm/v8MDAxQjf//M4DUIovBNDH8/w+ikQEjAwM6+P+fgZGREUwj2/IfQmM1AOw0FDeAaWIt//+D+GhiDAwMYBdA5f//R/bgf6Cm//8ZQJpQDUB1gfEBYgLQdmSDsYX/0GBEDzCG//8ZkF2AFsAMYECLBBwugKYHBiAGMKC5AOYNsAEMDIwMDAwMDP//MzL+Z2D4/x8AYRKnXVu5FMwAAAAASUVORK5CYII=',
-    '🚨': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA3UlEQVR4nGNgYGBgaF338D8DA8N/BgYGBgYGhv//Gf7/Z2D4z8DA/P////8ZGBgYGP7//w9mM/xnYAQxATRK+A+mGP7/Z2AE0f+h2Ph/sGb+/wwMDFCN//8zgNQii8E0Mfz/D6KRASMDAzr4/5+BkZERTCPb8h9CYzUA7DQUN4BpYi3//4P4aGIMDAxgF0Dl//9H9uB/oKb//xlAmlANQHWB8QFiAtB2ZIOxhf/QYEQPMIb//xmQXYAWwAxgQIsEHC6ApgcGIAYwoLkA5g2wAQwMjAwMDAwM//8zMv5nYPj/HwC8VqYT7De3PQAAAABJRU5ErkJggg==',
-    '⚠️': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA6ElEQVR4nGNgYGBgaF338D8DA8P//wwMDAwMDP//M/z/z8Dwn4GB+f////8zMDAwMPz//x/MZvjPwAhiAmiU8B9MMfz/z8AIov9DsfH/YM38/xkYGKAa//9nAKlFFoNpYvj/H0QjA0YGBnTw/z8DIyMjmEa25T+ExmoA2GkobgDTxFr+/wfx0cQYGBjALoDK//+P7MH/QE3//zOANKEagOoC4wPEBKDtyAZjC/+hwYgeYAz//zMguwAtgBnAgBYJOFwATQ8MQAxgQHMBzBtgAxgYGBkYGBgY/v9nZPzPwPD/PwCBuaF5XxOWowAAAABJRU5ErkJggg==',
+    ICON_DIR = Path(__file__).parent / "icons"
 
-    # Info/Process (Blue circle with i)
-    '🔍': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
-    '📝': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
-    '📋': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
-    '🎨': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
-    '🔧': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
-    '⚡': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
-    '🚀': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
-    '📁': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
+    # Icon file mappings (emoji -> filename)
+    ICON_FILES = {
+        '🎉': 'success.png', '✅': 'success.png', '🧹': 'success.png',
+        '❌': 'error.png', '🚨': 'error.png',
+        '⚠️': 'warning.png',
+        '🔍': 'info.png', '📝': 'info.png', '📋': 'info.png', '🎨': 'info.png', '🔧': 'info.png',
+        '⚡': 'progress.png', '🚀': 'progress.png', '🔄': 'progress.png', '⏳': 'progress.png',
+        '💾': 'progress.png', '⬇️': 'progress.png',
+        '🤖': 'ai.png', '💡': 'ai.png', '📜': 'ai.png',
+        '📁': 'file.png',
+        '🌐': 'network.png', '🖼️': 'file.png', '📊': 'info.png', '✨': 'success.png',
+    }
 
-    # Progress/Status (Cyan circle with arrow)
-    '🔄': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA3ElEQVR4nGNgYGBgaF338D8DA8P//wwMDAwMDP//M/z/z8Dwn4GB+f////8zMDAwMPz//x/MZvjPwAhiAmiU8B9MMfz/z8AIov9DsfH/YM38/xkYGKAa//9nAKlFFoNpYvj/H0QjA0YGBnTw/z8DIyMjmEa25T+ExmoA2GkobgDTxFr+/wfx0cQYGBjALoDK//+P7MH/QE3//zOANKEagOoC4wPEBKDtyAZjC/+hwYgeYAz//zMguwAtgBnAgBYJOFwATQ8MQAxgQHMBzBtgAxgYGBkYGBgY/v9nZPzPwPD/PwCjkqVEg/lxhgAAAABJRU5ErkJggg==',
-    '⏳': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA3ElEQVR4nGNgYGBgaF338D8DA8P//wwMDAwMDP//M/z/z8Dwn4GB+f////8zMDAwMPz//x/MZvjPwAhiAmiU8B9MMfz/z8AIov9DsfH/YM38/xkYGKAa//9nAKlFFoNpYvj/H0QjA0YGBnTw/z8DIyMjmEa25T+ExmoA2GkobgDTxFr+/wfx0cQYGBjALoDK//+P7MH/QE3//zOANKEagOoC4wPEBKDtyAZjC/+hwYgeYAz//zMguwAtgBnAgBYJOFwATQ8MQAxgQHMBzBtgAxgYGBkYGBgY/v9nZPzPwPD/PwCjkqVEg/lxhgAAAABJRU5ErkJggg==',
-    '💾': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA3ElEQVR4nGNgYGBgaF338D8DA8P//wwMDAwMDP//M/z/z8Dwn4GB+f////8zMDAwMPz//x/MZvjPwAhiAmiU8B9MMfz/z8AIov9DsfH/YM38/xkYGKAa//9nAKlFFoNpYvj/H0QjA0YGBnTw/z8DIyMjmEa25T+ExmoA2GkobgDTxFr+/wfx0cQYGBjALoDK//+P7MH/QE3//zOANKEagOoC4wPEBKDtyAZjC/+hwYgeYAz//zMguwAtgBnAgBYJOFwATQ8MQAxgQHMBzBtgAxgYGBkYGBgY/v9nZPzPwPD/PwCjkqVEg/lxhgAAAABJRU5ErkJggg==',
-    '⬇️': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA3ElEQVR4nGNgYGBgaF338D8DA8P//wwMDAwMDP//M/z/z8Dwn4GB+f////8zMDAwMPz//x/MZvjPwAhiAmiU8B9MMfz/z8AIov9DsfH/YM38/xkYGKAa//9nAKlFFoNpYvj/H0QjA0YGBnTw/z8DIyMjmEa25T+ExmoA2GkobgDTxFr+/wfx0cQYGBjALoDK//+P7MH/QE3//zOANKEagOoC4wPEBKDtyAZjC/+hwYgeYAz//zMguwAtgBnAgBYJOFwATQ8MQAxgQHMBzBtgAxgYGBkYGBgY/v9nZPzPwPD/PwCjkqVEg/lxhgAAAABJRU5ErkJggg==',
+    _cache = {}  # CTkImage cache
 
-    # Special/AI (Purple circle with sparkle)
-    '🤖': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA4klEQVR4nGNgYGBgaF338D8DA8P//wwMDAwMDP//M/z/z8Dwn4GB+f////8zMDAwMPz//x/MZvjPwAhiAmiU8B9MMfz/z8AIov9DsfH/YM38/xkYGKAa//9nAKlFFoNpYvj/H0QjA0YGBnTw/z8DIyMjmEa25T+ExmoA2GkobgDTxFr+/wfx0cQYGBjALoDK//+P7MH/QE3//zOANKEagOoC4wPEBKDtyAZjC/+hwYgeYAz//zMguwAtgBnAgBYJOFwATQ8MQAxgQHMBzBtgAxgYGBkYGBgY/v9nZPzPwPD/PwDNB6hO6ynWPgAAAABJRU5ErkJggg==',
-    '💡': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA4klEQVR4nGNgYGBgaF338D8DA8P//wwMDAwMDP//M/z/z8Dwn4GB+f////8zMDAwMPz//x/MZvjPwAhiAmiU8B9MMfz/z8AIov9DsfH/YM38/xkYGKAa//9nAKlFFoNpYvj/H0QjA0YGBnTw/z8DIyMjmEa25T+ExmoA2GkobgDTxFr+/wfx0cQYGBjALoDK//+P7MH/QE3//zOANKEagOoC4wPEBKDtyAZjC/+hwYgeYAz//zMguwAtgBnAgBYJOFwATQ8MQAxgQHMBzBtgAxgYGBkYGBgY/v9nZPzPwPD/PwDNB6hO6ynWPgAAAABJRU5ErkJggg==',
-    '📜': 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA2UlEQVR4nGNgYGBgaF338P9/BgYG5v///zMwMDAwMKAB5gEsjAwMDL///2dgYGBg+P//P8P//xBaf4BhAAMDA8P//wyMKGr+Q2n0AMR/IP7//z8DyAX//zMy/v/PyPj/PwMDAwPIfwaG//8Z/v8H0uj+Z/j/nwHkAwYkTQz/GRkZGRkZ/v//z8gI4jP8/88A1vz/PwMj439GVBf8/8/IyMjw/z8DyBCG//8Z/jMgAf7/jCAXYHMBSAyjAegpBhiAGsBwgJggNh/8/w/Ww8DAwPD/P8N/BgYGBgYAVjyjlUuOp5MAAAAASUVORK5CYII=',
+    @classmethod
+    def load_icon(cls, emoji: str, size: tuple = (16, 16)) -> Optional[ctk.CTkImage]:
+        """Load icon file and return CTkImage"""
+        cache_key = f"{emoji}_{size[0]}x{size[1]}"
+
+        # Return cached if available
+        if cache_key in cls._cache:
+            return cls._cache[cache_key]
+
+        # Get icon filename
+        icon_file = cls.ICON_FILES.get(emoji)
+        if not icon_file:
+            return None
+
+        icon_path = cls.ICON_DIR / icon_file
+        if not icon_path.exists():
+            return None
+
+        try:
+            from PIL import Image
+            pil_image = Image.open(icon_path)
+            if pil_image.size != size:
+                pil_image = pil_image.resize(size, Image.LANCZOS)
+
+            ctk_image = ctk.CTkImage(
+                light_image=pil_image,
+                dark_image=pil_image,
+                size=size
+            )
+            cls._cache[cache_key] = ctk_image
+            return ctk_image
+        except Exception as e:
+            return None
+
+    @classmethod
+    def load_all_icons(cls) -> dict:
+        """Preload all icons into cache"""
+        loaded = {}
+        for emoji in cls.ICON_FILES.keys():
+            icon = cls.load_icon(emoji)
+            if icon:
+                loaded[emoji] = icon
+        if loaded:
+            print(f"[i] Loaded {len(loaded)}/{len(cls.ICON_FILES)} icon files")
+        return loaded
+
+
+class ErrorReporter:
+    """Collects and packages error information for debugging"""
+
+    @staticmethod
+    def create_report(app_instance) -> dict:
+        """Generate comprehensive error report"""
+        import platform
+
+        # Get screenshot data if available
+        screenshot_data = None
+        if hasattr(app_instance, 'current_image_path') and app_instance.current_image_path and os.path.exists(app_instance.current_image_path):
+            try:
+                with open(app_instance.current_image_path, 'rb') as f:
+                    import base64
+                    screenshot_data = base64.b64encode(f.read()).decode('utf-8')[:10000]
+            except:
+                screenshot_data = "[Failed to read screenshot]"
+
+        return {
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "version": getattr(app_instance, 'current_version', 'Unknown'),
+            "system": {
+                "os": platform.system(),
+                "os_version": platform.version(),
+                "python_version": sys.version,
+                "ctk_version": ctk.__version__
+            },
+            "screenshot": {
+                "exists": bool(getattr(app_instance, 'current_image_path', None)),
+                "path": str(app_instance.current_image_path) if hasattr(app_instance, 'current_image_path') and app_instance.current_image_path else None,
+                "size": str(app_instance.original_pil_image_for_crop.size) if hasattr(app_instance, 'original_pil_image_for_crop') and app_instance.original_pil_image_for_crop else None,
+                "preview": screenshot_data
+            },
+            "activity_log": app_instance.activity_log.log_entries[-50:] if hasattr(app_instance, 'activity_log') else [],
+            "answer_text": app_instance.answer_textbox.get("1.0", "end")[:5000] if hasattr(app_instance, 'answer_textbox') else "",
+            "last_error": str(getattr(app_instance, 'last_exception', None)),
+            "model": app_instance.selected_model_var.get() if hasattr(app_instance, 'selected_model_var') else None,
+            "api_key_present": bool(getattr(app_instance, 'api_key', None))
+        }
+
+    @staticmethod
+    def save_report(report_data: dict, output_dir: str = ".") -> str:
+        """Save report to JSON file"""
+        filename = f"error_report_{time.strftime('%Y%m%d_%H%M%S')}.json"
+        filepath = os.path.join(output_dir, filename)
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(report_data, f, indent=2, default=str)
+        return filepath
+
+
+# Fallback symbols when icon files aren't available
+SYMBOL_MAP = {
+    '🎉': '[✓]', '✅': '[✓]', '🧹': '[✓]',
+    '❌': '[✗]', '🚨': '[!]', '⚠️': '[!]',
+    '🔍': '[i]', '📝': '[i]', '📋': '[i]', '🎨': '[i]', '🔧': '[i]',
+    '⚡': '[~]', '🚀': '[~]', '🔄': '[~]', '⏳': '[.]', '💾': '[S]', '⬇️': '[↓]',
+    '🤖': '[AI]', '💡': '[*]', '📜': '[i]',
+    '📁': '[F]', '🌐': '[W]', '🖼️': '[F]', '📊': '[i]', '✨': '[✓]',
 }
 
 # Emoji to color tag mapping
@@ -203,32 +295,8 @@ class ActivityLogWidget(ctk.CTkScrollableFrame):
         self._load_emoji_images()
 
     def _load_emoji_images(self):
-        """Load base64 emoji images into PIL/ImageTk format"""
-        import io
-        from PIL import Image
-
-        loaded_count = 0
-        failed_count = 0
-
-        for emoji, b64_data in EMOJI_IMAGE_DATA.items():
-            try:
-                image_data = base64.b64decode(b64_data)
-                pil_image = Image.open(io.BytesIO(image_data))
-                # Verify image is valid by loading it
-                pil_image.load()
-                # Resize to 16x16 if needed
-                if pil_image.size != (16, 16):
-                    pil_image = pil_image.resize((16, 16), Image.LANCZOS)
-                # Convert to CTkImage
-                ctk_image = ctk.CTkImage(light_image=pil_image, dark_image=pil_image, size=(16, 16))
-                self.emoji_images[emoji] = ctk_image
-                loaded_count += 1
-            except Exception as e:
-                # Skip corrupted images, will use text fallback
-                failed_count += 1
-
-        if failed_count > 0:
-            print(f"⚠️  Emoji images: {loaded_count} loaded, {failed_count} failed (using text fallback)")
+        """Load icon files using IconManager"""
+        self.emoji_images = IconManager.load_all_icons()
 
     def add_log(self, message: str, emoji: str = None):
         """Add a log entry with optional emoji icon"""
@@ -266,33 +334,28 @@ class ActivityLogWidget(ctk.CTkScrollableFrame):
         timestamp_label.pack(side="left", padx=(2, 5))
         timestamp_label.bind("<Button-3>", lambda e: self._show_context_menu(e))
 
-        # Emoji icon (fallback to text if image fails)
+        # Icon display (use real icon file or fallback to colored symbol)
         if emoji and emoji in self.emoji_images:
-            try:
-                emoji_label = ctk.CTkLabel(
-                    entry_frame,
-                    text="",
-                    image=self.emoji_images[emoji],
-                    width=18
-                )
-                emoji_label.pack(side="left", padx=(0, 5))
-                emoji_label.bind("<Button-3>", lambda e: self._show_context_menu(e))
-            except Exception as e:
-                # Fallback to text emoji if image fails
-                emoji_label = ctk.CTkLabel(
-                    entry_frame,
-                    text=emoji,
-                    font=("Segoe UI Emoji", 12),
-                    width=18
-                )
-                emoji_label.pack(side="left", padx=(0, 5))
-                emoji_label.bind("<Button-3>", lambda e: self._show_context_menu(e))
-        elif emoji:
-            # Show text emoji if no image available
+            # Use icon image
             emoji_label = ctk.CTkLabel(
                 entry_frame,
-                text=emoji,
-                font=("Segoe UI Emoji", 12),
+                text="",
+                image=self.emoji_images[emoji],
+                width=18
+            )
+            emoji_label.pack(side="left", padx=(0, 5))
+            emoji_label.bind("<Button-3>", lambda e: self._show_context_menu(e))
+        elif emoji:
+            # Fallback to colored text symbol
+            symbol = SYMBOL_MAP.get(emoji, '[?]')
+            color_tag = EMOJI_COLORS.get(emoji, 'INFO_BLUE')
+            symbol_color = COLOR_VALUES.get(color_tag, COLOR_VALUES['INFO_BLUE'])
+
+            emoji_label = ctk.CTkLabel(
+                entry_frame,
+                text=symbol,
+                font=("Consolas", 10, "bold"),
+                text_color=symbol_color,
                 width=18
             )
             emoji_label.pack(side="left", padx=(0, 5))
@@ -1020,13 +1083,13 @@ class HomeworkApp(ctk.CTk):
         # Primary Workflow - Segmented Control (2 steps)
         workflow_buttons = [
             {
-                "text": "1️⃣ Capture Question",
+                "text": "① Capture Question",
                 "command": self.start_capture_thread,
                 "color": "#3498DB",  # Blue
                 "state": "normal"
             },
             {
-                "text": "2️⃣ Get AI Answer",
+                "text": "② Get AI Answer",
                 "command": self.start_ai_thread,
                 "color": "#2ECC71",  # Green
                 "state": "disabled"
@@ -1055,7 +1118,7 @@ class HomeworkApp(ctk.CTk):
 
         self.launch_brave_button = ctk.CTkButton(
             utility_frame,
-            text="🚀 Brave",
+            text="Launch Brave",
             command=self.launch_brave_with_debugging,
             height=utility_height,
             font=utility_font,
@@ -1067,7 +1130,7 @@ class HomeworkApp(ctk.CTk):
 
         self.load_screenshot_button = ctk.CTkButton(
             utility_frame,
-            text="📁 Load",
+            text="Load Screenshot",
             command=self.load_saved_screenshot,
             height=utility_height,
             font=utility_font,
@@ -1076,6 +1139,19 @@ class HomeworkApp(ctk.CTk):
             hover_color=("#357ABD", "#1F4788")
         )
         self.load_screenshot_button.grid(row=0, column=1, padx=(5, 0), pady=0, sticky="ew")
+
+        # Report Error button (for debugging)
+        self.report_error_button = ctk.CTkButton(
+            utility_frame,
+            text="Report Error",
+            command=self.create_error_report,
+            height=utility_height,
+            font=utility_font,
+            corner_radius=6,
+            fg_color="#E74C3C",
+            hover_color="#C0392B"
+        )
+        self.report_error_button.grid(row=1, column=0, columnspan=2, padx=0, pady=(5, 0), sticky="ew")
 
         # Re-crop button will be added dynamically to screenshot area (not here)
         settings_outer_frame = ctk.CTkFrame(self.left_panel); settings_outer_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=(10,5)); settings_outer_frame.grid_columnconfigure(0, weight=1)
@@ -1395,18 +1471,18 @@ class HomeworkApp(ctk.CTk):
             subprocess.Popen(launch_args, shell=False)
             print("✅ Brave browser launched successfully with remote debugging enabled!")
             print("🌐 Navigate to your homework site and then click 'Capture Question'")
-            self.launch_brave_button.configure(text="Brave Launched ✅", fg_color="green")
-            self.after(3000, lambda: self.launch_brave_button.configure(text="🚀 Launch Brave Browser", fg_color=ctk.ThemeManager.theme["CTkButton"]["fg_color"]))
+            self.launch_brave_button.configure(text="Brave Launched ✓", fg_color="green")
+            self.after(3000, lambda: self.launch_brave_button.configure(text="Launch Brave", fg_color=ctk.ThemeManager.theme["CTkButton"]["fg_color"]))
         except FileNotFoundError:
             print("❌ Error: Brave browser not found at expected location.")
             print(f"   Expected path: {brave_exe_path}")
             print("   Please ensure Brave is installed or update the path in the code.")
-            self.launch_brave_button.configure(text="Brave Not Found ❌", fg_color="red")
-            self.after(3000, lambda: self.launch_brave_button.configure(text="🚀 Launch Brave Browser", fg_color=ctk.ThemeManager.theme["CTkButton"]["fg_color"]))
+            self.launch_brave_button.configure(text="Brave Not Found ✗", fg_color="red")
+            self.after(3000, lambda: self.launch_brave_button.configure(text="Launch Brave", fg_color=ctk.ThemeManager.theme["CTkButton"]["fg_color"]))
         except Exception as e:
             print(f"❌ Error launching Brave: {e}")
-            self.launch_brave_button.configure(text="Launch Failed ❌", fg_color="red")
-            self.after(3000, lambda: self.launch_brave_button.configure(text="🚀 Launch Brave Browser", fg_color=ctk.ThemeManager.theme["CTkButton"]["fg_color"]))
+            self.launch_brave_button.configure(text="Launch Failed ✗", fg_color="red")
+            self.after(3000, lambda: self.launch_brave_button.configure(text="Launch Brave", fg_color=ctk.ThemeManager.theme["CTkButton"]["fg_color"]))
         finally:
             self.after(1000, lambda: self.launch_brave_button.configure(state="normal"))
 
@@ -1491,8 +1567,41 @@ class HomeworkApp(ctk.CTk):
             traceback.print_exc()
             self._update_screenshot_display(None, error_msg)
             self.current_image_path = None
-            self.original_pil_image_for_crop = None
-            self.current_dropdown_data = []
+
+    def create_error_report(self):
+        """Generate and save error report"""
+        try:
+            print("[i] Generating error report...")
+
+            # Create report
+            report = ErrorReporter.create_report(self)
+
+            # Save to file
+            filepath = ErrorReporter.save_report(report)
+
+            # Copy to clipboard
+            report_text = json.dumps(report, indent=2, default=str)
+            self.clipboard_clear()
+            self.clipboard_append(report_text)
+
+            # Show success message
+            print(f"[✓] Error report saved: {filepath}")
+            print("[✓] Report copied to clipboard!")
+            print("[i] You can now paste this report in a bug report")
+
+            # Open file location (optional)
+            try:
+                if sys.platform == "win32":
+                    os.startfile(os.path.dirname(os.path.abspath(filepath)))
+                elif sys.platform == "darwin":
+                    subprocess.run(["open", os.path.dirname(os.path.abspath(filepath))])
+            except:
+                pass
+
+        except Exception as e:
+            print(f"[✗] Failed to create error report: {e}")
+            import traceback
+            traceback.print_exc()
 
     def _create_screenshot_image_label_with_children(self):
         if hasattr(self, 'screenshot_image_label') and self.screenshot_image_label.winfo_exists():
@@ -1668,7 +1777,7 @@ class HomeworkApp(ctk.CTk):
                 else: final_error_message += " (Task returned unexpected data or None)."
                 self.after(0, self._update_screenshot_display, None, final_error_message); self.current_image_path=None; self.original_pil_image_for_crop=None; self.current_dropdown_data=[]
         except Exception as e: print(f"Error in capture task thread: {e}\n"); traceback.print_exc(); self.after(0, self._update_screenshot_display, None, f"Capture error: {e}"); self.current_image_path=None; self.original_pil_image_for_crop=None; self.current_dropdown_data=[]
-        finally: self.after(0, lambda: self.capture_button.configure(state="normal", text="1️⃣ Capture Question"))
+        finally: self.after(0, lambda: self.capture_button.configure(state="normal", text="① Capture Question"))
 
     def _update_screenshot_display(self, pil_image_to_display: Image.Image = None, message: str = None): # type: ignore
         try:
@@ -3845,7 +3954,7 @@ If any part of the question or an answer involves a numeric value that you canno
             success = self._render_edmentum_question(analysis, processed_data)
             if success:
                 print("✓ Edmentum rendering successful")
-                self.ai_button.configure(state="normal", text="2️⃣ Get AI Answer")
+                self.ai_button.configure(state="normal", text="② Get AI Answer")
                 # Auto-scroll to answers
                 self.after(200, self._auto_scroll_to_answers)
                 return
