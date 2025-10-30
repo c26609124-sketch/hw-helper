@@ -207,18 +207,28 @@ class ActivityLogWidget(ctk.CTkScrollableFrame):
         import io
         from PIL import Image
 
+        loaded_count = 0
+        failed_count = 0
+
         for emoji, b64_data in EMOJI_IMAGE_DATA.items():
             try:
                 image_data = base64.b64decode(b64_data)
                 pil_image = Image.open(io.BytesIO(image_data))
+                # Verify image is valid by loading it
+                pil_image.load()
                 # Resize to 16x16 if needed
                 if pil_image.size != (16, 16):
                     pil_image = pil_image.resize((16, 16), Image.LANCZOS)
                 # Convert to CTkImage
                 ctk_image = ctk.CTkImage(light_image=pil_image, dark_image=pil_image, size=(16, 16))
                 self.emoji_images[emoji] = ctk_image
+                loaded_count += 1
             except Exception as e:
-                print(f"Failed to load emoji {emoji}: {e}")
+                # Skip corrupted images, will use text fallback
+                failed_count += 1
+
+        if failed_count > 0:
+            print(f"⚠️  Emoji images: {loaded_count} loaded, {failed_count} failed (using text fallback)")
 
     def add_log(self, message: str, emoji: str = None):
         """Add a log entry with optional emoji icon"""
@@ -256,12 +266,33 @@ class ActivityLogWidget(ctk.CTkScrollableFrame):
         timestamp_label.pack(side="left", padx=(2, 5))
         timestamp_label.bind("<Button-3>", lambda e: self._show_context_menu(e))
 
-        # Emoji icon
+        # Emoji icon (fallback to text if image fails)
         if emoji and emoji in self.emoji_images:
+            try:
+                emoji_label = ctk.CTkLabel(
+                    entry_frame,
+                    text="",
+                    image=self.emoji_images[emoji],
+                    width=18
+                )
+                emoji_label.pack(side="left", padx=(0, 5))
+                emoji_label.bind("<Button-3>", lambda e: self._show_context_menu(e))
+            except Exception as e:
+                # Fallback to text emoji if image fails
+                emoji_label = ctk.CTkLabel(
+                    entry_frame,
+                    text=emoji,
+                    font=("Segoe UI Emoji", 12),
+                    width=18
+                )
+                emoji_label.pack(side="left", padx=(0, 5))
+                emoji_label.bind("<Button-3>", lambda e: self._show_context_menu(e))
+        elif emoji:
+            # Show text emoji if no image available
             emoji_label = ctk.CTkLabel(
                 entry_frame,
-                text="",
-                image=self.emoji_images[emoji],
+                text=emoji,
+                font=("Segoe UI Emoji", 12),
                 width=18
             )
             emoji_label.pack(side="left", padx=(0, 5))
