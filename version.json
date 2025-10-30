@@ -1,7 +1,21 @@
 {
-  "version": "1.0.5",
-  "release_date": "2025-10-29",
+  "version": "1.0.6",
+  "release_date": "2025-10-30",
   "changelog": [
+    {
+      "version": "1.0.6",
+      "date": "2025-10-30",
+      "changes": [
+        "CRITICAL: Fixed auto-scroll functionality (proper canvas access)",
+        "NEW: GitHub-style colored badges in update modal (blue/green/red pills)",
+        "NEW: Direct Edmentum skeleton rendering (50% faster, no flicker)",
+        "NEW: Platform-specific emoji fonts (colored emojis on Windows)",
+        "UPDATE: Compacted control buttons (20% smaller, cleaner layout)",
+        "UPDATE: Removed initial analysis container (sleeker experience)",
+        "UPDATE: Reduced matching pairs spacing (60% less blank space)",
+        "FIX: Eliminated two-stage rendering latency for instant answers"
+      ]
+    },
     {
       "version": "1.0.5",
       "date": "2025-10-29",

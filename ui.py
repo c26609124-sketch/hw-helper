@@ -10,6 +10,7 @@ import tkinter
 import re # Import regular expressions for parsing placeholders
 import random # Added for replacing "None"
 import subprocess # For launching Brave browser
+import platform # For OS detection
 from tkinter import filedialog # For file selection dialog
 from typing import Dict, List, Optional, Tuple, Union # Type hints for progressive parser
 
@@ -67,6 +68,36 @@ except ImportError:
     print("***********************************************************************************")
     print("WARNING: Could not import ImageDraw, ImageFont from PIL. Text on stub image may not work.")
     print("***********************************************************************************")
+
+
+# --- Edmentum Styling Constants (for skeleton rendering) ---
+EDMENTUM_SKELETON_STYLES = {
+    'border_radius': 6,
+    'margin_option': 8,
+    'font_family': 'Arial',
+    'font_size_option': 14,
+}
+
+def get_edmentum_color(key: str, dark_mode: bool = False) -> str:
+    """Get Edmentum colors for skeleton rendering"""
+    light_colors = {
+        'bg_primary': '#FFFFFF',
+        'gray_border': '#DEE2E6',
+        'gray_light': '#E9ECEF',
+        'green_correct': '#28A745',
+        'green_light': '#D4EDDA',
+        'gray_text': '#6C757D',
+    }
+    dark_colors = {
+        'bg_primary': '#1E1E1E',
+        'gray_border': '#404040',
+        'gray_light': '#353535',
+        'green_correct': '#4CAF50',
+        'green_light': '#1a311a',
+        'gray_text': '#B0B0B0',
+    }
+    colors = dark_colors if dark_mode else light_colors
+    return colors.get(key, light_colors.get(key, ''))
 
 
 # --- Selenium Script Import ---
@@ -393,6 +424,14 @@ def get_openrouter_response_streaming(api_key: str, model_name: str, image_base6
 class UpdateModal(ctk.CTkToplevel):
     """Modal window for displaying update progress with progress bar and restart button"""
 
+    # Badge colors (GitHub-style)
+    BADGE_COLORS = {
+        'NEW': '#1a73e8',      # Blue
+        'FIX': '#34a853',      # Green
+        'CRITICAL': '#ea4335', # Red
+        'UPDATE': '#fbbc04',   # Yellow
+    }
+
     def __init__(self, parent, version: str, changelog: list):
         super().__init__(parent)
 
@@ -401,9 +440,13 @@ class UpdateModal(ctk.CTkToplevel):
         self.changelog = changelog
         self.update_complete = False
 
+        # Detect emoji font based on platform
+        self.emoji_font = "Segoe UI Emoji" if platform.system() == "Windows" else "Apple Color Emoji"
+        self.default_font = "Segoe UI" if platform.system() == "Windows" else "Arial"
+
         # Configure window
         self.title("Update Available")
-        self.geometry("600x500")
+        self.geometry("600x520")
         self.resizable(False, False)
 
         # Make modal (stay on top)
@@ -413,10 +456,38 @@ class UpdateModal(ctk.CTkToplevel):
         # Center on screen
         self.update_idletasks()
         x = (self.winfo_screenwidth() // 2) - (600 // 2)
-        y = (self.winfo_screenheight() // 2) - (500 // 2)
+        y = (self.winfo_screenheight() // 2) - (520 // 2)
         self.geometry(f"+{x}+{y}")
 
         self._build_ui()
+
+    def _extract_badge_type(self, text: str) -> Tuple[Optional[str], str]:
+        """Extract badge type from changelog text (e.g., 'NEW: ...' returns ('NEW', '...')"""
+        for badge_type in self.BADGE_COLORS.keys():
+            prefix = f"{badge_type}: "
+            if text.startswith(prefix):
+                return badge_type, text[len(prefix):]
+        return None, text
+
+    def _create_badge(self, parent, badge_type: str) -> ctk.CTkFrame:
+        """Create a GitHub-style pill badge"""
+        badge_frame = ctk.CTkFrame(
+            parent,
+            fg_color=self.BADGE_COLORS[badge_type],
+            corner_radius=10,
+            height=20
+        )
+
+        label = ctk.CTkLabel(
+            badge_frame,
+            text=badge_type,
+            font=(self.default_font, 9, "bold"),
+            text_color="white",
+            height=20
+        )
+        label.pack(padx=8, pady=2)
+
+        return badge_frame
 
     def _build_ui(self):
         """Build the modal UI"""
@@ -431,7 +502,7 @@ class UpdateModal(ctk.CTkToplevel):
         title_label = ctk.CTkLabel(
             header_frame,
             text=f"🎉 Update Available: v{self.version}",
-            font=("Arial", 20, "bold"),
+            font=(self.emoji_font, 20, "bold"),
             text_color="#1a73e8"
         )
         title_label.pack(side="left")
@@ -443,27 +514,42 @@ class UpdateModal(ctk.CTkToplevel):
         changelog_title = ctk.CTkLabel(
             changelog_frame,
             text="📋 What's New:",
-            font=("Arial", 14, "bold"),
+            font=(self.emoji_font, 14, "bold"),
             anchor="w"
         )
         changelog_title.pack(fill="x", padx=15, pady=(15, 10))
 
-        # Scrollable changelog
-        changelog_text = ctk.CTkTextbox(
+        # Scrollable changelog container
+        changelog_scroll = ctk.CTkScrollableFrame(
             changelog_frame,
-            wrap="word",
-            font=("Arial", 12),
             fg_color="#1e1e1e",
-            height=150,
-            activate_scrollbars=True
+            height=150
         )
-        changelog_text.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+        changelog_scroll.pack(fill="both", expand=True, padx=15, pady=(0, 15))
 
-        # Add changelog items
+        # Add changelog items with badges
         for item in self.changelog:
-            changelog_text.insert("end", f"  • {item}\n")
+            badge_type, text = self._extract_badge_type(item)
 
-        changelog_text.configure(state="disabled")
+            # Create item container
+            item_frame = ctk.CTkFrame(changelog_scroll, fg_color="transparent")
+            item_frame.pack(fill="x", pady=3, anchor="w")
+
+            # Add badge if present
+            if badge_type:
+                badge = self._create_badge(item_frame, badge_type)
+                badge.pack(side="left", padx=(0, 8))
+
+            # Add bullet point and text
+            item_text = ctk.CTkLabel(
+                item_frame,
+                text=f"• {text}" if not badge_type else text,
+                font=(self.default_font, 12),
+                anchor="w",
+                wraplength=500,
+                justify="left"
+            )
+            item_text.pack(side="left", fill="x", expand=True)
 
         # Progress section
         progress_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
@@ -473,7 +559,7 @@ class UpdateModal(ctk.CTkToplevel):
         self.status_label = ctk.CTkLabel(
             progress_frame,
             text="⬇️ Preparing to download...",
-            font=("Arial", 12),
+            font=(self.emoji_font, 12),
             anchor="w"
         )
         self.status_label.pack(fill="x", pady=(0, 5))
@@ -492,7 +578,7 @@ class UpdateModal(ctk.CTkToplevel):
         self.progress_label = ctk.CTkLabel(
             progress_frame,
             text="0%",
-            font=("Arial", 11),
+            font=(self.default_font, 11),
             text_color="#888888"
         )
         self.progress_label.pack(anchor="e")
@@ -509,7 +595,8 @@ class UpdateModal(ctk.CTkToplevel):
             width=120,
             height=35,
             fg_color="#444444",
-            hover_color="#555555"
+            hover_color="#555555",
+            font=(self.default_font, 12)
         )
         self.cancel_button.pack(side="left")
 
@@ -522,7 +609,8 @@ class UpdateModal(ctk.CTkToplevel):
             height=35,
             fg_color="#1a73e8",
             hover_color="#1557b0",
-            state="disabled"
+            state="disabled",
+            font=(self.emoji_font, 12)
         )
         self.restart_button.pack(side="right")
 
@@ -610,7 +698,7 @@ class HomeworkApp(ctk.CTk):
         self.left_panel.grid_propagate(False); self.left_panel.grid_columnconfigure(0, weight=1)
         self.left_panel.grid_rowconfigure(0, weight=0); self.left_panel.grid_rowconfigure(1, weight=0); self.left_panel.grid_rowconfigure(2, weight=0); self.left_panel.grid_rowconfigure(3, weight=1, minsize=150)
         button_frame = ctk.CTkFrame(self.left_panel, fg_color="transparent"); button_frame.grid(row=0, column=0, sticky="new", padx=10, pady=(10, 10)); button_frame.grid_columnconfigure(0, weight=1)
-        button_font = ("Segoe UI", 13); button_height = 36; button_corner_radius = 6
+        button_font = ("Segoe UI", 11, "bold"); button_height = 32; button_corner_radius = 6
         self.launch_brave_button = ctk.CTkButton(button_frame, text="🚀 Launch Brave Browser", command=self.launch_brave_with_debugging, height=button_height, font=button_font, corner_radius=button_corner_radius, fg_color=("#FF8C00", "#FF6347"), hover_color=("#FF7F50", "#FF4500")); self.launch_brave_button.grid(row=0, column=0, padx=0, pady=6, sticky="ew")
         self.load_screenshot_button = ctk.CTkButton(button_frame, text="📁 Load Screenshot", command=self.load_saved_screenshot, height=button_height, font=button_font, corner_radius=button_corner_radius, fg_color=("#4A90E2", "#2A5298"), hover_color=("#357ABD", "#1F4788")); self.load_screenshot_button.grid(row=1, column=0, padx=0, pady=6, sticky="ew")
         self.capture_button = ctk.CTkButton(button_frame, text="1. Capture Question", command=self.start_capture_thread, height=button_height, font=button_font, corner_radius=button_corner_radius); self.capture_button.grid(row=2, column=0, padx=0, pady=6, sticky="ew")
@@ -1256,11 +1344,13 @@ class HomeworkApp(ctk.CTk):
             if hasattr(self, 'answer_scroll_frame') and self.answer_scroll_frame.winfo_exists():
                 # Update layout to ensure proper sizing
                 self.answer_scroll_frame.update_idletasks()
-                # Scroll to bottom (1.0 = 100%)
-                self.answer_scroll_frame.yview_moveto(1.0)
-                print("📜 Auto-scrolled to answers")
+                # Access internal canvas (CTkScrollableFrame wraps a canvas)
+                if hasattr(self.answer_scroll_frame, '_parent_canvas'):
+                    canvas = self.answer_scroll_frame._parent_canvas
+                    canvas.yview_moveto(1.0)
+                    print("📜 Auto-scrolled to answers")
         except Exception as e:
-            print(f"⚠️ Auto-scroll failed: {e}")
+            print(f"⚠️ Auto-scroll error: {e}")
 
     def _debounced_scroll(self):
         """Debounced scroll handler for streaming updates"""
@@ -1566,7 +1656,11 @@ class HomeworkApp(ctk.CTk):
             question_frame_height = q_frame.winfo_height()
             if question_frame_height > 300:
                 # Schedule scroll after a brief delay to ensure all widgets are rendered
-                self.after(150, lambda: self.answer_scroll_frame.yview_moveto(0.35))
+                def scroll_to_answers():
+                    if hasattr(self.answer_scroll_frame, '_parent_canvas'):
+                        canvas = self.answer_scroll_frame._parent_canvas
+                        canvas.yview_moveto(0.35)
+                self.after(150, scroll_to_answers)
                 print(f"📜 Auto-scrolled to answers section (question height: {question_frame_height}px)")
 
         # --- Detect Dropdown-Only Fill-in-the-Blank Questions ---
@@ -2658,9 +2752,89 @@ If any part of the question or an answer involves a numeric value that you canno
 
         return skeleton_frame
 
+    def _create_edmentum_mc_skeleton(self, letter: str, answer_id: str) -> ctk.CTkFrame:
+        """Create multiple choice skeleton in Edmentum format"""
+        is_dark = ctk.get_appearance_mode() == "Dark"
+
+        skeleton = ctk.CTkFrame(
+            self.progressive_answers_container,
+            fg_color=(get_edmentum_color('gray_light', False), get_edmentum_color('gray_light', True)),
+            corner_radius=EDMENTUM_SKELETON_STYLES['border_radius'],
+            border_width=1,
+            border_color=(get_edmentum_color('gray_border', False), get_edmentum_color('gray_border', True)),
+            height=50
+        )
+        skeleton.pack(fill="x", pady=EDMENTUM_SKELETON_STYLES['margin_option'])
+
+        inner = ctk.CTkFrame(skeleton, fg_color="transparent")
+        inner.pack(fill="both", expand=True, padx=12, pady=10)
+
+        # Badge (letter)
+        badge = ctk.CTkFrame(inner, width=32, height=32, corner_radius=16,
+                            fg_color=(get_edmentum_color('gray_border', False), get_edmentum_color('gray_border', True)))
+        badge.pack(side="left", padx=(0, 12))
+        badge.pack_propagate(False)
+
+        badge_label = ctk.CTkLabel(badge, text=letter, font=("Arial", 14, "bold"),
+                                   text_color=(get_edmentum_color('gray_text', False), get_edmentum_color('gray_text', True)))
+        badge_label.place(relx=0.5, rely=0.5, anchor="center")
+
+        # Loading text
+        loading_label = ctk.CTkLabel(inner, text="Loading answer...",
+                                     font=(EDMENTUM_SKELETON_STYLES['font_family'], EDMENTUM_SKELETON_STYLES['font_size_option']),
+                                     text_color=(get_edmentum_color('gray_text', False), get_edmentum_color('gray_text', True)))
+        loading_label.pack(side="left", fill="x", expand=True)
+
+        return skeleton
+
+    def _create_edmentum_matching_skeleton(self, pair_num: int, answer_id: str) -> ctk.CTkFrame:
+        """Create matching pair skeleton in Edmentum format"""
+        skeleton = ctk.CTkFrame(
+            self.progressive_answers_container,
+            fg_color="transparent",
+            height=50
+        )
+        skeleton.pack(fill="x", pady=4)
+
+        # Number badge
+        badge = ctk.CTkLabel(skeleton, text=str(pair_num), font=("Arial", 13, "bold"),
+                            fg_color=(get_edmentum_color('gray_light', False), get_edmentum_color('gray_light', True)),
+                            corner_radius=14, width=28, height=28,
+                            text_color=(get_edmentum_color('gray_text', False), get_edmentum_color('gray_text', True)))
+        badge.pack(side="left", padx=(0, 12))
+
+        # Loading text
+        loading_label = ctk.CTkLabel(skeleton, text="Loading term ➡️ Loading match...",
+                                     font=("Arial", 13),
+                                     text_color=(get_edmentum_color('gray_text', False), get_edmentum_color('gray_text', True)))
+        loading_label.pack(side="left", fill="x", expand=True)
+
+        return skeleton
+
+    def _create_edmentum_hottext_skeleton(self, selection_num: int, answer_id: str) -> ctk.CTkFrame:
+        """Create hot text selection skeleton in Edmentum format"""
+        skeleton = ctk.CTkFrame(
+            self.progressive_answers_container,
+            fg_color=(get_edmentum_color('green_light', False), get_edmentum_color('green_light', True)),
+            corner_radius=8,
+            border_width=2,
+            border_color=(get_edmentum_color('green_correct', False), get_edmentum_color('green_correct', True)),
+            height=50
+        )
+        skeleton.pack(fill="x", pady=5, padx=15)
+
+        # Loading text for selection
+        loading_label = ctk.CTkLabel(skeleton, text="Loading selection...",
+                                     font=("Arial", 18, "bold"),
+                                     text_color=(get_edmentum_color('green_correct', False), get_edmentum_color('green_correct', True)))
+        loading_label.pack(fill="both", expand=True, padx=15, pady=10)
+
+        return skeleton
+
     def _create_skeletons_from_metadata(self, metadata: Dict):
         """
-        Create skeleton placeholders for all answers based on metadata
+        Create skeleton placeholders in FINAL Edmentum format based on rendering strategy
+        This eliminates the two-stage rendering latency
 
         Args:
             metadata: The metadata object with question_type, total_answers, and answer_structure
@@ -2669,25 +2843,52 @@ If any part of the question or an answer involves a numeric value that you canno
             print("⚠️ Invalid metadata, skipping skeleton creation")
             return
 
+        # Get rendering strategy from cached analysis
+        strategy = ''
+        if hasattr(self, 'cached_analysis') and isinstance(self.cached_analysis, dict):
+            strategy = self.cached_analysis.get('rendering_strategy', '')
+
         answer_structure = metadata.get("answer_structure", [])
         if not answer_structure:
             print("⚠️ No answer_structure in metadata, skipping skeleton creation")
             return
 
-        print(f"🎨 Creating {len(answer_structure)} skeleton placeholders...")
+        print(f"🎨 Creating {len(answer_structure)} Edmentum-styled skeleton placeholders (strategy: {strategy})...")
 
-        for answer_spec in answer_structure:
-            answer_type = answer_spec.get("type", "generic")
-            answer_id = answer_spec.get("id", f"skeleton_{len(self.skeleton_frames)}")
-            label = answer_spec.get("label", "")
+        # Create skeletons based on rendering strategy
+        if strategy == 'edmentum_multiple_choice':
+            # Multiple choice: Create Edmentum-styled MC skeletons
+            for i, answer_spec in enumerate(answer_structure):
+                answer_id = answer_spec.get("id", f"mc_option_{chr(65+i)}")
+                letter = chr(65 + i)  # A, B, C, D
+                skeleton = self._create_edmentum_mc_skeleton(letter, answer_id)
+                self.skeleton_frames[answer_id] = skeleton
 
-            # Create skeleton
-            skeleton = self._create_skeleton_for_type(answer_type, answer_id, label)
+        elif strategy == 'edmentum_matching':
+            # Matching pairs: Create Edmentum-styled matching skeletons
+            for i, answer_spec in enumerate(answer_structure):
+                answer_id = answer_spec.get("id", f"matching_pair_{i+1}")
+                skeleton = self._create_edmentum_matching_skeleton(i + 1, answer_id)
+                self.skeleton_frames[answer_id] = skeleton
 
-            # Track skeleton for later replacement
-            self.skeleton_frames[answer_id] = skeleton
+        elif strategy == 'edmentum_hot_text':
+            # Hot text: Create Edmentum-styled selection skeletons
+            for i, answer_spec in enumerate(answer_structure):
+                answer_id = answer_spec.get("id", f"hot_text_{i+1}")
+                skeleton = self._create_edmentum_hottext_skeleton(i + 1, answer_id)
+                self.skeleton_frames[answer_id] = skeleton
 
-        print(f"✓ {len(self.skeleton_frames)} skeletons created and displayed")
+        else:
+            # Fallback: Use generic skeletons for unknown strategies
+            print(f"   Using generic skeletons for strategy: {strategy}")
+            for answer_spec in answer_structure:
+                answer_type = answer_spec.get("type", "generic")
+                answer_id = answer_spec.get("id", f"skeleton_{len(self.skeleton_frames)}")
+                label = answer_spec.get("label", "")
+                skeleton = self._create_skeleton_for_type(answer_type, answer_id, label)
+                self.skeleton_frames[answer_id] = skeleton
+
+        print(f"✓ {len(self.skeleton_frames)} Edmentum-styled skeletons created")
 
     def _render_progressive_content(self, new_data: Dict):
         """Render newly complete JSON objects as formatted UI elements (PHASE 2)"""
@@ -2696,12 +2897,12 @@ If any part of the question or an answer involves a numeric value that you canno
                 print(f"⚠️ Progressive render received non-dict data: {type(new_data)}")
                 return
 
-            # PRIORITY 0: Handle initial_analysis first - display analysis section
+            # PRIORITY 0: Handle initial_analysis first - cache but don't display
             if "initial_analysis" in new_data and not hasattr(self, 'analysis_displayed'):
                 analysis = new_data["initial_analysis"]
-                print(f"🔍 Initial analysis received, displaying analysis section")
-                self._display_initial_analysis(analysis)
+                self.cached_analysis = analysis  # Store for skeleton rendering
                 self.analysis_displayed = True
+                print(f"🔍 Analysis parsed (not displayed)")
 
             # PRIORITY 1: Handle metadata - create skeleton placeholders
             if "metadata" in new_data:

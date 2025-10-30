@@ -357,9 +357,9 @@ class EdmentumMatchedPairs(EdmentumComponent):
             text_color=self.get_color('gray_text'),
             width=250
         )
-        left_header.pack(side="left", padx=5)
+        left_header.pack(side="left", padx=2)
 
-        center_spacer = ctk.CTkFrame(header_frame, fg_color="transparent", width=80)
+        center_spacer = ctk.CTkFrame(header_frame, fg_color="transparent", width=40)
         center_spacer.pack(side="left")
 
         right_header = ctk.CTkLabel(
@@ -369,7 +369,7 @@ class EdmentumMatchedPairs(EdmentumComponent):
             text_color=self.get_color('gray_text'),
             width=250
         )
-        right_header.pack(side="left", padx=5)
+        right_header.pack(side="left", padx=2)
 
         # Render each pair
         for i, pair in enumerate(self.pairs):
