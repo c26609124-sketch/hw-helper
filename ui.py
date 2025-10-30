@@ -134,31 +134,120 @@ except ImportError as e:
 
 
 class StdoutRedirector:
+    """Enhanced stdout redirector with colored symbols replacing emojis"""
+
+    # Emoji to colored symbol mapping
+    EMOJI_MAP = {
+        # Success/Completion (Green)
+        '🎉': ('●', 'SUCCESS'),
+        '✅': ('✓', 'SUCCESS'),
+        '✓': ('✓', 'SUCCESS'),
+        '✔': ('✓', 'SUCCESS'),
+        '🧹': ('✓', 'SUCCESS'),
+
+        # Error/Critical (Red)
+        '❌': ('✗', 'ERROR'),
+        '✗': ('✗', 'ERROR'),
+        '🚨': ('!', 'CRITICAL'),
+        '⚠️': ('!', 'WARNING'),
+
+        # Info/Process (Blue)
+        '🔍': ('◆', 'INFO_BLUE'),
+        '📝': ('◆', 'INFO_BLUE'),
+        '📜': ('◆', 'INFO_BLUE'),
+        '📋': ('◆', 'INFO_BLUE'),
+        '🎨': ('◆', 'INFO_BLUE'),
+        '🔧': ('◆', 'INFO_BLUE'),
+        '⚡': ('◆', 'INFO_BLUE'),
+        '🚀': ('◆', 'INFO_BLUE'),
+        '📁': ('◆', 'INFO_BLUE'),
+
+        # Progress/Status (Cyan)
+        '🔄': ('↻', 'INFO_CYAN'),
+        '⏳': ('⋯', 'INFO_CYAN'),
+        '💾': ('▸', 'INFO_CYAN'),
+        '⬇️': ('↓', 'INFO_CYAN'),
+
+        # Special (Purple)
+        '🤖': ('◇', 'INFO_PURPLE'),
+        '💡': ('◇', 'INFO_PURPLE'),
+    }
+
     def __init__(self, text_widget, app_instance):
         self.text_widget = text_widget
         self.app = app_instance
         self.text_widget.configure(state='disabled')
+
+        # Configure color tags
         self.text_widget.tag_config("TIMESTAMP", foreground="gray60")
-        self.text_widget.tag_config("ERROR", foreground="#E74C3C")
-        self.text_widget.tag_config("WARNING", foreground="#F39C12")
-        self.text_widget.tag_config("DEBUG", foreground="#3498DB")
+        self.text_widget.tag_config("ERROR", foreground="#E74C3C", font=("Consolas", 10, "bold"))
+        self.text_widget.tag_config("CRITICAL", foreground="#C0392B", font=("Consolas", 10, "bold"))
+        self.text_widget.tag_config("WARNING", foreground="#F39C12", font=("Consolas", 10, "bold"))
+        self.text_widget.tag_config("SUCCESS", foreground="#2ECC71", font=("Consolas", 10, "bold"))
+        self.text_widget.tag_config("INFO_BLUE", foreground="#3498DB", font=("Consolas", 10, "bold"))
+        self.text_widget.tag_config("INFO_CYAN", foreground="#1ABC9C", font=("Consolas", 10, "bold"))
+        self.text_widget.tag_config("INFO_PURPLE", foreground="#9B59B6", font=("Consolas", 10, "bold"))
+        self.text_widget.tag_config("DEBUG", foreground="#95A5A6")
+
+        # Default info color (adaptive to theme)
         try:
             current_theme_mode = ctk.get_appearance_mode()
-            if current_theme_mode == "Dark": info_fg_color = ctk.ThemeManager.theme.get("CTkLabel", {}).get("text_color", [None, "gray85"])[1]
-            else: info_fg_color = ctk.ThemeManager.theme.get("CTkLabel", {}).get("text_color", ["gray10", None])[0]
-            if info_fg_color is None: info_fg_color = "gray85" if current_theme_mode == "Dark" else "gray10"
-        except Exception: info_fg_color = "gray85" if ctk.get_appearance_mode() == "Dark" else "gray10"
+            if current_theme_mode == "Dark":
+                info_fg_color = ctk.ThemeManager.theme.get("CTkLabel", {}).get("text_color", [None, "gray85"])[1]
+            else:
+                info_fg_color = ctk.ThemeManager.theme.get("CTkLabel", {}).get("text_color", ["gray10", None])[0]
+            if info_fg_color is None:
+                info_fg_color = "gray85" if current_theme_mode == "Dark" else "gray10"
+        except Exception:
+            info_fg_color = "gray85" if ctk.get_appearance_mode() == "Dark" else "gray10"
+
         self.text_widget.tag_config("INFO", foreground=info_fg_color)
-    def write(self, string): self.app.after(0, self._write_to_widget, string)
+
+    def _replace_emojis(self, text):
+        """Replace emojis with colored symbols and return (processed_text, tag)"""
+        # Check if text starts with an emoji we want to replace
+        for emoji, (symbol, tag) in self.EMOJI_MAP.items():
+            if text.startswith(emoji):
+                # Replace emoji with symbol and return the appropriate tag
+                return symbol + text[len(emoji):], tag
+
+        return text, None
+
+    def write(self, string):
+        self.app.after(0, self._write_to_widget, string)
+
     def _write_to_widget(self, string):
         self.text_widget.configure(state='normal')
-        timestamp = time.strftime("[%H:%M:%S] "); self.text_widget.insert(ctk.END, timestamp, ("TIMESTAMP",))
-        tag_to_apply = "INFO"; original_string = string; lower_string = string.lower()
-        if "error" in lower_string or "failed" in lower_string or "traceback" in lower_string or "exception" in lower_string: tag_to_apply = "ERROR"
-        elif "warning" in lower_string: tag_to_apply = "WARNING"
-        elif string.startswith("DEBUG: "): tag_to_apply = "DEBUG"
-        self.text_widget.insert(ctk.END, original_string, (tag_to_apply,)); self.text_widget.see(ctk.END); self.text_widget.configure(state='disabled')
-    def flush(self): pass
+
+        # Add timestamp
+        timestamp = time.strftime("[%H:%M:%S] ")
+        self.text_widget.insert(ctk.END, timestamp, ("TIMESTAMP",))
+
+        # Replace emojis and determine tag
+        processed_string, emoji_tag = self._replace_emojis(string)
+
+        # Determine tag based on content or emoji
+        if emoji_tag:
+            tag_to_apply = emoji_tag
+        else:
+            lower_string = processed_string.lower()
+            if "error" in lower_string or "failed" in lower_string or "traceback" in lower_string or "exception" in lower_string:
+                tag_to_apply = "ERROR"
+            elif "critical" in lower_string:
+                tag_to_apply = "CRITICAL"
+            elif "warning" in lower_string:
+                tag_to_apply = "WARNING"
+            elif processed_string.startswith("DEBUG: "):
+                tag_to_apply = "DEBUG"
+            else:
+                tag_to_apply = "INFO"
+
+        self.text_widget.insert(ctk.END, processed_string, (tag_to_apply,))
+        self.text_widget.see(ctk.END)
+        self.text_widget.configure(state='disabled')
+
+    def flush(self):
+        pass
 
 HANDLE_SIZE = 10
 MIN_SELECTION_SIZE = 10

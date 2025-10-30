@@ -1,7 +1,19 @@
 {
-  "version": "1.0.6",
+  "version": "1.0.7",
   "release_date": "2025-10-30",
   "changelog": [
+    {
+      "version": "1.0.7",
+      "date": "2025-10-30",
+      "changes": [
+        "CRITICAL: Fixed Activity Log emoji rendering (colored symbols work everywhere!)",
+        "NEW: Enhanced logging system with 7 color-coded symbol types",
+        "NEW: Green ✓ for success, Red ✗ for errors, Blue ◆ for info, Cyan ↻ for progress",
+        "FIX: Replaced emoji-based logging with Unicode symbols + CTkTextbox tags",
+        "UPDATE: Bold colored symbols for instant visual recognition",
+        "UPDATE: All log messages now render with proper colors on Windows/Mac/Linux"
+      ]
+    },
     {
       "version": "1.0.6",
       "date": "2025-10-30",
