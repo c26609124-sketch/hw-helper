@@ -516,7 +516,7 @@ class EdmentumDropdown(EdmentumComponent):
             content_frame,
             wrap="word",
             font=(EDMENTUM_STYLES['font_family'], EDMENTUM_STYLES['font_size_question']),
-            fg_color=self.get_color('white'),
+            fg_color=self.get_color('bg_primary'),
             text_color=self.get_color('gray_dark'),
             border_width=0,
             height=100,

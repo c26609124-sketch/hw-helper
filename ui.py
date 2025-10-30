@@ -388,7 +388,191 @@ def get_openrouter_response_streaming(api_key: str, model_name: str, image_base6
         print(f"❌ Streaming error: {e}")
         traceback.print_exc()
         return {"status": "ERROR_PROCESSING_FAILED", "error_message": str(e)}
-    
+
+
+class UpdateModal(ctk.CTkToplevel):
+    """Modal window for displaying update progress with progress bar and restart button"""
+
+    def __init__(self, parent, version: str, changelog: list):
+        super().__init__(parent)
+
+        self.parent = parent
+        self.version = version
+        self.changelog = changelog
+        self.update_complete = False
+
+        # Configure window
+        self.title("Update Available")
+        self.geometry("600x500")
+        self.resizable(False, False)
+
+        # Make modal (stay on top)
+        self.transient(parent)
+        self.grab_set()
+
+        # Center on screen
+        self.update_idletasks()
+        x = (self.winfo_screenwidth() // 2) - (600 // 2)
+        y = (self.winfo_screenheight() // 2) - (500 // 2)
+        self.geometry(f"+{x}+{y}")
+
+        self._build_ui()
+
+    def _build_ui(self):
+        """Build the modal UI"""
+        # Main container
+        main_frame = ctk.CTkFrame(self, fg_color="transparent")
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+
+        # Header with icon and version
+        header_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        header_frame.pack(fill="x", pady=(0, 15))
+
+        title_label = ctk.CTkLabel(
+            header_frame,
+            text=f"🎉 Update Available: v{self.version}",
+            font=("Arial", 20, "bold"),
+            text_color="#1a73e8"
+        )
+        title_label.pack(side="left")
+
+        # Changelog section
+        changelog_frame = ctk.CTkFrame(main_frame, fg_color="#2b2b2b", corner_radius=10)
+        changelog_frame.pack(fill="both", expand=True, pady=(0, 15))
+
+        changelog_title = ctk.CTkLabel(
+            changelog_frame,
+            text="📋 What's New:",
+            font=("Arial", 14, "bold"),
+            anchor="w"
+        )
+        changelog_title.pack(fill="x", padx=15, pady=(15, 10))
+
+        # Scrollable changelog
+        changelog_text = ctk.CTkTextbox(
+            changelog_frame,
+            wrap="word",
+            font=("Arial", 12),
+            fg_color="#1e1e1e",
+            height=150,
+            activate_scrollbars=True
+        )
+        changelog_text.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+
+        # Add changelog items
+        for item in self.changelog:
+            changelog_text.insert("end", f"  • {item}\n")
+
+        changelog_text.configure(state="disabled")
+
+        # Progress section
+        progress_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        progress_frame.pack(fill="x", pady=(0, 15))
+
+        # Status label
+        self.status_label = ctk.CTkLabel(
+            progress_frame,
+            text="⬇️ Preparing to download...",
+            font=("Arial", 12),
+            anchor="w"
+        )
+        self.status_label.pack(fill="x", pady=(0, 5))
+
+        # Progress bar
+        self.progress_bar = ctk.CTkProgressBar(
+            progress_frame,
+            mode="determinate",
+            height=20,
+            corner_radius=10
+        )
+        self.progress_bar.pack(fill="x", pady=(0, 5))
+        self.progress_bar.set(0)
+
+        # Progress percentage label
+        self.progress_label = ctk.CTkLabel(
+            progress_frame,
+            text="0%",
+            font=("Arial", 11),
+            text_color="#888888"
+        )
+        self.progress_label.pack(anchor="e")
+
+        # Buttons frame
+        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        button_frame.pack(fill="x")
+
+        # Cancel button (left side)
+        self.cancel_button = ctk.CTkButton(
+            button_frame,
+            text="Cancel",
+            command=self.cancel_update,
+            width=120,
+            height=35,
+            fg_color="#444444",
+            hover_color="#555555"
+        )
+        self.cancel_button.pack(side="left")
+
+        # Restart button (right side) - initially disabled
+        self.restart_button = ctk.CTkButton(
+            button_frame,
+            text="🔄 Restart Now",
+            command=self.restart_application,
+            width=150,
+            height=35,
+            fg_color="#1a73e8",
+            hover_color="#1557b0",
+            state="disabled"
+        )
+        self.restart_button.pack(side="right")
+
+    def update_progress(self, current: int, total: int, filename: str, percentage: int):
+        """Update progress bar and status label (thread-safe)"""
+        def _update():
+            self.status_label.configure(text=f"⬇️ Downloading: {filename} ({current}/{total})")
+            self.progress_bar.set(percentage / 100.0)
+            self.progress_label.configure(text=f"{percentage}%")
+
+        # Use after() to ensure thread safety
+        self.after(0, _update)
+
+    def mark_complete(self):
+        """Mark update as complete and enable restart button"""
+        def _complete():
+            self.update_complete = True
+            self.status_label.configure(text="✅ Update installed successfully!")
+            self.progress_bar.set(1.0)
+            self.progress_label.configure(text="100%")
+            self.restart_button.configure(state="normal")
+            self.cancel_button.configure(text="Later")
+
+        self.after(0, _complete)
+
+    def mark_failed(self, error_msg: str = "Update failed"):
+        """Mark update as failed"""
+        def _failed():
+            self.status_label.configure(text=f"❌ {error_msg}")
+            self.cancel_button.configure(text="Close")
+
+        self.after(0, _failed)
+
+    def cancel_update(self):
+        """Cancel/close the update modal"""
+        if not self.update_complete:
+            print("⚠️ Update cancelled by user")
+        self.grab_release()
+        self.destroy()
+
+    def restart_application(self):
+        """Restart the application"""
+        self.grab_release()
+        self.destroy()
+
+        # Call parent's restart method
+        if hasattr(self.parent, 'restart_application'):
+            self.parent.restart_application()
+
+
 class HomeworkApp(ctk.CTk):
     def __init__(self):
         # Set appearance BEFORE creating window for macOS compatibility
@@ -609,22 +793,66 @@ class HomeworkApp(ctk.CTk):
 
             if update_available:
                 print(f"🎉 Update available: v{new_version}")
-                if changelog:
-                    print("📋 What's new:")
-                    for change in changelog[:3]:  # Show first 3 changes
-                        print(f"   • {change}")
 
-                # Auto-apply update
-                print("⬇️ Downloading update...")
-                if apply_update_silent():
-                    print("✅ Update installed! Please restart the application to use the new version.")
-                else:
-                    print("⚠️ Update download failed. You can try again later.")
+                # Show update modal on main thread
+                self.after(0, lambda: self._show_update_modal(new_version, changelog))
             else:
                 print("✅ Application is up to date")
 
         except Exception as e:
             print(f"⚠️ Update check failed: {e}")
+
+    def _show_update_modal(self, version: str, changelog: list):
+        """Show update modal and handle update process"""
+        try:
+            # Create modal
+            modal = UpdateModal(self, version, changelog)
+
+            # Start update in background thread
+            def perform_update():
+                try:
+                    # Progress callback
+                    def on_progress(current, total, filename, percentage):
+                        modal.update_progress(current, total, filename, percentage)
+
+                    # Apply update with progress callback
+                    success = apply_update_silent(progress_callback=on_progress)
+
+                    if success:
+                        modal.mark_complete()
+                        print("✅ Update installed! Click 'Restart Now' to use the new version.")
+                    else:
+                        modal.mark_failed("Update download failed")
+                        print("⚠️ Update download failed. You can try again later.")
+
+                except Exception as e:
+                    modal.mark_failed(f"Error: {str(e)}")
+                    print(f"❌ Update error: {e}")
+
+            # Start update thread
+            threading.Thread(target=perform_update, daemon=True).start()
+
+        except Exception as e:
+            print(f"❌ Failed to show update modal: {e}")
+
+    def restart_application(self):
+        """Restart the application after update"""
+        try:
+            print("🔄 Restarting application...")
+
+            # Save current state if needed
+            self.quit()
+
+            # Get the current Python executable and script
+            python = sys.executable
+            script = sys.argv[0]
+
+            # Restart using the same Python executable
+            os.execv(python, [python, script] + sys.argv[1:])
+
+        except Exception as e:
+            print(f"❌ Restart failed: {e}")
+            print("Please restart the application manually.")
 
     def update_session_usage(self, tokens_used: dict):
         """Update session cost with ACTUAL cost from OpenRouter (not estimated)"""

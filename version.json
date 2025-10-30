@@ -1,7 +1,17 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.3",
   "release_date": "2025-10-29",
   "changelog": [
+    {
+      "version": "1.0.3",
+      "date": "2025-10-29",
+      "changes": [
+        "NEW: Update modal with progress bar and restart button",
+        "Fixed dropdown rendering crash (color error)",
+        "Improved update UX with real-time progress tracking",
+        "Added automatic app restart after updates"
+      ]
+    },
     {
       "version": "1.0.2",
       "date": "2025-10-29",

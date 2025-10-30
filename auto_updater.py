@@ -188,12 +188,13 @@ class AutoUpdater:
             logger.error(f"Error getting repo files: {e}")
             return None
 
-    def download_update(self, files_to_update: Optional[list] = None) -> bool:
+    def download_update(self, files_to_update: Optional[list] = None, progress_callback=None) -> bool:
         """
         Download update files from GitHub
 
         Args:
             files_to_update: List of specific files to update (None = all files)
+            progress_callback: Optional callback function(current, total, filename, percentage)
 
         Returns:
             True if successful, False otherwise
@@ -233,9 +234,16 @@ class AutoUpdater:
 
             # Download and apply updates
             success_count = 0
-            for file_path in files_to_download:
+            total_files = len(files_to_download)
+
+            for index, file_path in enumerate(files_to_download, 1):
                 url = f"{GITHUB_RAW_URL}/{file_path}"
                 dest_path = self.current_dir / file_path
+
+                # Report progress
+                if progress_callback:
+                    percentage = int((index / total_files) * 100)
+                    progress_callback(index, total_files, file_path, percentage)
 
                 # Backup existing file
                 if dest_path.exists():
@@ -264,9 +272,12 @@ class AutoUpdater:
             logger.error(f"Error downloading update: {e}")
             return False
 
-    def apply_update(self) -> bool:
+    def apply_update(self, progress_callback=None) -> bool:
         """
         Check for and apply updates
+
+        Args:
+            progress_callback: Optional callback function(current, total, filename, percentage)
 
         Returns:
             True if update was applied, False otherwise
@@ -278,7 +289,7 @@ class AutoUpdater:
 
         logger.info("Applying update...")
 
-        if self.download_update():
+        if self.download_update(progress_callback=progress_callback):
             logger.info("Update applied successfully!")
             logger.info(f"Updated to version {remote_data['version']}")
 
@@ -313,15 +324,18 @@ def check_for_updates_silent() -> Tuple[bool, Optional[str], Optional[list]]:
     return False, None, None
 
 
-def apply_update_silent() -> bool:
+def apply_update_silent(progress_callback=None) -> bool:
     """
     Apply updates without logging (for UI integration)
+
+    Args:
+        progress_callback: Optional callback function(current, total, filename, percentage)
 
     Returns:
         True if update applied successfully
     """
     updater = AutoUpdater()
-    return updater.apply_update()
+    return updater.apply_update(progress_callback=progress_callback)
 
 
 if __name__ == "__main__":
