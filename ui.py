@@ -1250,6 +1250,23 @@ class HomeworkApp(ctk.CTk):
         
         print("🧹 Answer display and state cleared")
 
+    def _auto_scroll_to_answers(self):
+        """Auto-scroll to bottom of answers container to show AI-generated answers"""
+        try:
+            if hasattr(self, 'answer_scroll_frame') and self.answer_scroll_frame.winfo_exists():
+                # Update layout to ensure proper sizing
+                self.answer_scroll_frame.update_idletasks()
+                # Scroll to bottom (1.0 = 100%)
+                self.answer_scroll_frame.yview_moveto(1.0)
+                print("📜 Auto-scrolled to answers")
+        except Exception as e:
+            print(f"⚠️ Auto-scroll failed: {e}")
+
+    def _debounced_scroll(self):
+        """Debounced scroll handler for streaming updates"""
+        self._scroll_pending = False
+        self._auto_scroll_to_answers()
+
     def _update_answer_textbox(self, text_content, placeholder=True):
         self._clear_answers(); self.answer_scroll_frame.update_idletasks(); frame_width = self.answer_scroll_frame.winfo_width(); wraplen = max(200, frame_width - 40)
         placeholder_color = ("gray60", "gray40") if placeholder else None; msg_widget = ctk.CTkLabel(self.answer_scroll_frame, text=text_content, text_color=placeholder_color, wraplength=wraplen, justify="left"); msg_widget.grid(row=0, column=0, padx=10, pady=10, sticky="new")
@@ -2411,27 +2428,40 @@ If any part of the question or an answer involves a numeric value that you canno
         self.streaming_active = True
         self.accumulated_response = ""
         first_render_time = None
-        
-        # PHASE 2: Progressive rendering callback
+        last_ui_update_time = [0]  # Use list for mutable reference
+        pending_data = [None]  # Store pending render data
+
+        # PHASE 2: Progressive rendering callback with debouncing
         def stream_chunk_callback(chunk_text, full_accumulated):
             nonlocal first_render_time
-            
+
             self.accumulated_response = full_accumulated
             char_count = len(full_accumulated)
-            
-            # Update button
-            self.after(0, lambda: self.ai_button.configure(text=f"⚡ Streaming... ({char_count} chars)"))
-            
+
+            # Debounce UI updates - only update every 150ms to reduce overhead
+            current_time = time.time()
+            time_since_last_update = current_time - last_ui_update_time[0]
+
+            # Update button text (less frequently)
+            if time_since_last_update >= 0.2:  # 200ms debounce for button text
+                self.after(0, lambda: self.ai_button.configure(text=f"⚡ Streaming... ({char_count} chars)"))
+
             # Progressive parsing and rendering
             if PROGRESSIVE_PARSER_AVAILABLE and hasattr(self, 'progressive_parser'):
                 # Check if parser still exists (not cleared by user clicking capture during streaming)
                 if self.progressive_parser is not None:
                     has_new, new_data = self.progressive_parser.add_chunk(chunk_text)
                     if has_new:
-                        # Capture data to avoid lambda closure issue
-                        data_to_render = new_data.copy() if isinstance(new_data, dict) else new_data
-                        self.after(0, lambda data=data_to_render: self._render_progressive_content(data))
-            
+                        # Batch render updates - only render if enough time has passed
+                        if time_since_last_update >= 0.15:  # 150ms debounce for renders
+                            # Capture data to avoid lambda closure issue
+                            data_to_render = new_data.copy() if isinstance(new_data, dict) else new_data
+                            self.after(0, lambda data=data_to_render: self._render_progressive_content(data))
+                            last_ui_update_time[0] = current_time
+                        else:
+                            # Store for next batch
+                            pending_data[0] = new_data
+
             # Log first render time
             if first_render_time is None:
                 first_render_time = time.time()
@@ -2445,7 +2475,13 @@ If any part of the question or an answer involves a numeric value that you canno
             prompt,
             chunk_callback=stream_chunk_callback
         )
-        
+
+        # Flush any pending render data
+        if pending_data[0] is not None:
+            data_to_render = pending_data[0].copy() if isinstance(pending_data[0], dict) else pending_data[0]
+            self.after(0, lambda data=data_to_render: self._render_progressive_content(data))
+            pending_data[0] = None
+
         self.streaming_active = False
         total_time = (time.time() - start_time) * 1000
         print(f"⏱️ TOTAL STREAM TIME: {total_time:.0f}ms")
@@ -2730,6 +2766,11 @@ If any part of the question or an answer involves a numeric value that you canno
         self._update_skeleton_content(skeleton_frame, answer_item)
 
         print(f"   ✓ Skeleton updated with real answer for {answer_id}")
+
+        # Auto-scroll as answers stream in (debounced to avoid excessive scrolling)
+        if not hasattr(self, '_scroll_pending') or not self._scroll_pending:
+            self._scroll_pending = True
+            self.after(300, self._debounced_scroll)
 
     def _update_skeleton_content(self, skeleton_frame: ctk.CTkFrame, answer_item: Dict):
         """
@@ -3219,6 +3260,8 @@ If any part of the question or an answer involves a numeric value that you canno
             if success:
                 print("✓ Edmentum rendering successful")
                 self.ai_button.configure(state="normal", text="3. Get AI Answer")
+                # Auto-scroll to answers
+                self.after(200, self._auto_scroll_to_answers)
                 return
             else:
                 print("⚠️ Edmentum rendering failed, falling back to standard display")
@@ -3229,6 +3272,9 @@ If any part of the question or an answer involves a numeric value that you canno
         # Standard display (fallback)
         self.display_ai_answers(processed_data)
         self.ai_button.configure(state="normal", text="3. Get AI Answer")
+
+        # Auto-scroll to answers
+        self.after(200, self._auto_scroll_to_answers)
 
     def _render_edmentum_question(self, analysis: Dict, response_data: Dict) -> bool:
         """
@@ -3245,15 +3291,16 @@ If any part of the question or an answer involves a numeric value that you canno
             return False
 
         try:
-            # Clear progressive answers container
-            if hasattr(self, 'progressive_answers_container') and self.progressive_answers_container.winfo_exists():
-                for widget in self.progressive_answers_container.winfo_children():
-                    widget.destroy()
+            # DON'T destroy progressive answers - they have the green highlighting!
+            # Just hide the streaming status label instead
+            if hasattr(self, 'streaming_status_label') and self.streaming_status_label.winfo_exists():
+                self.streaming_status_label.pack_forget()
 
-            # Clear initial analysis display from streaming container
+            # Clear ONLY the initial analysis display from streaming container
+            # Keep progressive_answers_container with its skeleton frames intact
             if hasattr(self, 'streaming_container') and self.streaming_container.winfo_exists():
                 for widget in self.streaming_container.winfo_children():
-                    # Keep only the progressive_answers_container
+                    # Keep the progressive_answers_container (has green highlights!)
                     if widget != self.progressive_answers_container:
                         widget.destroy()
 

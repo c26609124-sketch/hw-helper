@@ -1,7 +1,19 @@
 {
-  "version": "1.0.4",
+  "version": "1.0.5",
   "release_date": "2025-10-29",
   "changelog": [
+    {
+      "version": "1.0.5",
+      "date": "2025-10-29",
+      "changes": [
+        "NEW: Auto-scroll to answers (no more manual scrolling needed!)",
+        "NEW: Enhanced hot text display with large, bold correct selections",
+        "Fixed white background readability issue in dark mode",
+        "Optimized streaming performance with 150ms debouncing",
+        "Added dark mode green colors for better contrast",
+        "Improved answer visibility during progressive rendering"
+      ]
+    },
     {
       "version": "1.0.4",
       "date": "2025-10-29",

@@ -75,6 +75,10 @@ EDMENTUM_DARK_STYLES = {
     'gray_light': '#353535',
     'gray_text': '#B0B0B0',
     'gray_dark': '#E0E0E0',
+    # Green colors for dark mode (darker green with good contrast)
+    'green_correct': '#4CAF50',  # Brighter green for dark mode
+    'green_light': '#1a311a',     # Dark green background
+    'green_border': '#4CAF50',
 }
 
 
@@ -271,13 +275,15 @@ class EdmentumMultipleChoice(EdmentumComponent):
         badge = create_circle_badge(inner_frame, letter, is_correct=is_correct)
         badge.pack(side="left", padx=(0, 12))
 
-        # Option text
+        # Option text with contrasting color
         text_content = option.get('text', option.get('text_content', ''))
+        # Use dark text for correct answers in light mode, light text in dark mode
+        text_color = "#155724" if (is_correct and self.appearance_mode == "Light") else self.get_color('gray_dark')
         option_label = ctk.CTkLabel(
             inner_frame,
             text=text_content,
             font=(EDMENTUM_STYLES['font_family'], EDMENTUM_STYLES['font_size_option']),
-            text_color=self.get_color('gray_dark'),
+            text_color=text_color,
             wraplength=600,
             justify="left",
             anchor="w"
@@ -804,17 +810,59 @@ class EdmentumHotText(EdmentumComponent):
                 passage_text.tag_add("highlight", pos, end_pos)
                 start_idx = end_pos
 
-        # Configure highlight tag
+        # Configure highlight tag with green for correct answers
         # NOTE: CTkTextbox doesn't allow 'font' in tag_config due to scaling conflicts
         # Using only background and foreground for highlighting
         passage_text.tag_config(
             "highlight",
-            background=EDMENTUM_STYLES['blue_light'],
-            foreground=EDMENTUM_STYLES['blue_primary']
+            background="#d4edda",  # Light green for correct selections
+            foreground="#155724"   # Dark green text
         )
 
         # Make read-only
         passage_text.configure(state="disabled")
+
+        # Add large text section showing correct selections
+        selections_container = ctk.CTkFrame(
+            self.parent,
+            fg_color=("#d4edda", "#1a311a"),  # Light/dark green
+            corner_radius=EDMENTUM_STYLES['border_radius'],
+            border_width=2,
+            border_color=EDMENTUM_STYLES['green_correct']
+        )
+        selections_container.pack(fill="x", pady=(10, 0))
+
+        # Title
+        title_label = ctk.CTkLabel(
+            selections_container,
+            text="✅ Correct Selections:",
+            font=(EDMENTUM_STYLES['font_family'], 16, "bold"),
+            text_color=EDMENTUM_STYLES['green_correct']
+        )
+        title_label.pack(anchor="w", padx=15, pady=(15, 10))
+
+        # Show each selected text in large, bold format
+        for selected in self.selected_texts:
+            answer_frame = ctk.CTkFrame(
+                selections_container,
+                fg_color=EDMENTUM_STYLES['green_correct'],
+                corner_radius=8,
+                height=40
+            )
+            answer_frame.pack(fill="x", padx=15, pady=5)
+
+            answer_label = ctk.CTkLabel(
+                answer_frame,
+                text=f"• {selected}",
+                font=(EDMENTUM_STYLES['font_family'], 18, "bold"),
+                text_color="white",
+                wraplength=650,
+                anchor="w"
+            )
+            answer_label.pack(fill="both", expand=True, padx=15, pady=10)
+
+        # Bottom padding
+        ctk.CTkLabel(selections_container, text="", height=5).pack()
 
 
 # ============================================================================
