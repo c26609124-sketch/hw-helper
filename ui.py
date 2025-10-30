@@ -36,12 +36,9 @@ except ImportError as e:
     PROGRESSIVE_PARSER_AVAILABLE = False
 
 # --- Edmentum Question Renderer ---
-try:
-    from edmentum_question_renderer import EdmentumQuestionRenderer, InitialAnalysisDisplay
-    EDMENTUM_RENDERER_AVAILABLE = True
-except ImportError as e:
-    print(f"Note: Edmentum renderer not available: {e}")
-    EDMENTUM_RENDERER_AVAILABLE = False
+# NOTE: EdmentumQuestionRenderer functionality is now integrated into edmentum_components.py
+# This module import is no longer needed - using EDMENTUM_COMPONENTS_AVAILABLE instead
+EDMENTUM_RENDERER_AVAILABLE = False  # Legacy flag, kept for compatibility
 
 # --- Response Validator ---
 try:
@@ -202,6 +199,7 @@ class ActivityLogWidget(ctk.CTkScrollableFrame):
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
         self.emoji_images = {}  # Cache loaded images
+        self.log_entries = []  # Store plain text entries for copying
         self._load_emoji_images()
 
     def _load_emoji_images(self):
@@ -225,6 +223,7 @@ class ActivityLogWidget(ctk.CTkScrollableFrame):
     def add_log(self, message: str, emoji: str = None):
         """Add a log entry with optional emoji icon"""
         # Detect emoji from message start if not provided
+        original_message = message
         if not emoji:
             for emoji_char in EMOJI_COLORS.keys():
                 if message.startswith(emoji_char):
@@ -232,13 +231,20 @@ class ActivityLogWidget(ctk.CTkScrollableFrame):
                     message = message[len(emoji_char):].lstrip()
                     break
 
-        # Create log entry frame
+        # Store plain text for copying (with emoji character if present)
+        timestamp = time.strftime("[%H:%M:%S]")
+        plain_text = f"{timestamp} {emoji if emoji else ''} {message}".strip()
+        self.log_entries.append(plain_text)
+
+        # Create log entry frame with context menu support
         entry_frame = ctk.CTkFrame(self, fg_color="transparent", height=20)
         entry_frame.pack(fill="x", pady=1, padx=2)
         entry_frame.pack_propagate(False)
 
+        # Add right-click context menu for copying
+        entry_frame.bind("<Button-3>", lambda e: self._show_context_menu(e))
+
         # Timestamp
-        timestamp = time.strftime("[%H:%M:%S]")
         timestamp_label = ctk.CTkLabel(
             entry_frame,
             text=timestamp,
@@ -248,6 +254,7 @@ class ActivityLogWidget(ctk.CTkScrollableFrame):
             anchor="w"
         )
         timestamp_label.pack(side="left", padx=(2, 5))
+        timestamp_label.bind("<Button-3>", lambda e: self._show_context_menu(e))
 
         # Emoji icon
         if emoji and emoji in self.emoji_images:
@@ -258,6 +265,7 @@ class ActivityLogWidget(ctk.CTkScrollableFrame):
                 width=18
             )
             emoji_label.pack(side="left", padx=(0, 5))
+            emoji_label.bind("<Button-3>", lambda e: self._show_context_menu(e))
 
         # Message text
         color_tag = EMOJI_COLORS.get(emoji, 'INFO_BLUE')
@@ -272,14 +280,35 @@ class ActivityLogWidget(ctk.CTkScrollableFrame):
             justify="left"
         )
         message_label.pack(side="left", fill="x", expand=True)
+        message_label.bind("<Button-3>", lambda e: self._show_context_menu(e))
 
         # Auto-scroll to bottom
         self.after(10, lambda: self._parent_canvas.yview_moveto(1.0))
+
+    def _show_context_menu(self, event):
+        """Show right-click context menu for copying logs"""
+        import tkinter as tk
+        menu = tk.Menu(self, tearoff=0)
+        menu.add_command(label="Copy All Logs", command=self._copy_all_logs)
+        menu.add_command(label="Clear Logs", command=self.clear)
+        try:
+            menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            menu.grab_release()
+
+    def _copy_all_logs(self):
+        """Copy all log entries to clipboard"""
+        if self.log_entries:
+            all_logs = "\n".join(self.log_entries)
+            self.clipboard_clear()
+            self.clipboard_append(all_logs)
+            print("📋 Activity log copied to clipboard")
 
     def clear(self):
         """Clear all log entries"""
         for widget in self.winfo_children():
             widget.destroy()
+        self.log_entries.clear()
 
 
 class SegmentedControl(ctk.CTkFrame):
