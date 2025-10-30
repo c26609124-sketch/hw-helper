@@ -11,6 +11,7 @@ import re # Import regular expressions for parsing placeholders
 import random # Added for replacing "None"
 import subprocess # For launching Brave browser
 import platform # For OS detection
+from pathlib import Path # For icon directory path resolution
 from tkinter import filedialog # For file selection dialog
 from typing import Dict, List, Optional, Tuple, Union # Type hints for progressive parser
 
@@ -4025,118 +4026,22 @@ If any part of the question or an answer involves a numeric value that you canno
             traceback.print_exc()
             return False
 
-def pre_launch_update_check():
-    """
-    CRITICAL: Check for updates BEFORE initializing the app
-    This prevents being stuck with broken code that crashes before update check
-    Now shows the UpdateModal UI for better user experience
-    """
-    if not AUTO_UPDATER_AVAILABLE:
-        return False
+if __name__ == "__main__":
+    # NOTE: It's recommended to run main.py instead of ui.py directly
+    # main.py handles pre-launch updates more safely
+    print("⚠️ You're running ui.py directly.")
+    print("   For better update handling, run main.py instead.")
+    print("   Launching app in 2 seconds...\n")
+    time.sleep(2)
 
     try:
-        print("🔍 Checking for updates before launch...")
-
-        from auto_updater import check_for_updates_silent, apply_update_silent
-        update_available, new_version, changelog = check_for_updates_silent()
-
-        if update_available:
-            print(f"🎉 Update available: v{new_version}")
-
-            # Create a temporary CTk window to show the UpdateModal
-            temp_root = ctk.CTk()
-            temp_root.withdraw()  # Hide the root window
-
-            # Create the update modal
-            modal = UpdateModal(temp_root, new_version, changelog)
-
-            # Track update completion
-            update_success = [False]  # Use list to allow modification in nested function
-
-            def perform_update():
-                """Run update in background thread"""
-                try:
-                    # Wait for modal to render
-                    time.sleep(1.0)
-
-                    # Progress callback to update modal
-                    def on_progress(current, total, filename, percentage):
-                        if hasattr(modal, 'progress_bar') and modal.progress_bar.winfo_exists():
-                            modal.progress_bar.set(percentage / 100.0)
-                        if hasattr(modal, 'status_label') and modal.status_label.winfo_exists():
-                            modal.status_label.configure(text=f"Downloading: {filename} ({percentage}%)")
-                        temp_root.update_idletasks()
-
-                    # Apply update
-                    success = apply_update_silent(progress_callback=on_progress)
-                    update_success[0] = success
-
-                    if success:
-                        # Update modal status
-                        if hasattr(modal, 'status_label') and modal.status_label.winfo_exists():
-                            modal.status_label.configure(text="✅ Update installed successfully!")
-                        if hasattr(modal, 'progress_bar') and modal.progress_bar.winfo_exists():
-                            modal.progress_bar.set(1.0)
-
-                        # Enable restart button
-                        if hasattr(modal, 'restart_button') and modal.restart_button.winfo_exists():
-                            modal.restart_button.configure(state="normal")
-                            modal.update_complete = True
-
-                        temp_root.update_idletasks()
-                        time.sleep(2)  # Give user time to see success message
-                    else:
-                        if hasattr(modal, 'status_label') and modal.status_label.winfo_exists():
-                            modal.status_label.configure(text="❌ Update failed, launching current version...")
-                        time.sleep(2)
-
-                    # Close modal and quit event loop
-                    temp_root.after(100, lambda: temp_root.quit())
-
-                except Exception as e:
-                    print(f"⚠️ Update failed: {e}")
-                    temp_root.after(100, lambda: temp_root.quit())
-
-            # Start update in background thread
-            import threading
-            update_thread = threading.Thread(target=perform_update, daemon=True)
-            update_thread.start()
-
-            # Run event loop to keep modal visible
-            temp_root.mainloop()
-
-            # Clean up
-            temp_root.destroy()
-
-            # Return True if update succeeded (signal to exit)
-            if update_success[0]:
-                print("✅ Update installed successfully!")
-                print("🔄 Please restart the application to use the new version.")
-                return True
-            else:
-                print("❌ Update failed, launching current version...")
-                return False
-
-        else:
-            print("✅ Application is up to date")
-
+        app = HomeworkApp()
+        app.mainloop()
     except Exception as e:
-        print(f"⚠️ Pre-launch update check failed: {e}")
-        print("   Launching current version...")
-        time.sleep(1)
-
-    return False
-
-
-if __name__ == "__main__":
-    # CRITICAL: Check for updates BEFORE creating UI
-    # This prevents being stuck with broken code
-    should_exit = pre_launch_update_check()
-
-    if should_exit:
-        import sys
-        sys.exit(0)
-
-    # Only create app if no update was installed
-    app = HomeworkApp()
-    app.mainloop()
+        print(f"\n[ERROR] Application failed to start!")
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
+        print("\nPress Enter to exit...")
+        input()
+        sys.exit(1)
