@@ -4029,6 +4029,7 @@ def pre_launch_update_check():
     """
     CRITICAL: Check for updates BEFORE initializing the app
     This prevents being stuck with broken code that crashes before update check
+    Now shows the UpdateModal UI for better user experience
     """
     if not AUTO_UPDATER_AVAILABLE:
         return False
@@ -4041,28 +4042,81 @@ def pre_launch_update_check():
 
         if update_available:
             print(f"🎉 Update available: v{new_version}")
-            print("\n📋 What's new:")
-            for change in changelog[:5]:  # Show first 5 changes
-                print(f"  • {change}")
 
-            print("\n⬇️ Downloading update...")
+            # Create a temporary CTk window to show the UpdateModal
+            temp_root = ctk.CTk()
+            temp_root.withdraw()  # Hide the root window
 
-            # Apply update with simple progress
-            def progress_callback(current, total, filename, percentage):
-                if percentage % 20 == 0:  # Print every 20%
-                    print(f"   {percentage}% - {filename}")
+            # Create the update modal
+            modal = UpdateModal(temp_root, new_version, changelog)
 
-            success = apply_update_silent(progress_callback=progress_callback)
+            # Track update completion
+            update_success = [False]  # Use list to allow modification in nested function
 
-            if success:
+            def perform_update():
+                """Run update in background thread"""
+                try:
+                    # Wait for modal to render
+                    time.sleep(1.0)
+
+                    # Progress callback to update modal
+                    def on_progress(current, total, filename, percentage):
+                        if hasattr(modal, 'progress_bar') and modal.progress_bar.winfo_exists():
+                            modal.progress_bar.set(percentage / 100.0)
+                        if hasattr(modal, 'status_label') and modal.status_label.winfo_exists():
+                            modal.status_label.configure(text=f"Downloading: {filename} ({percentage}%)")
+                        temp_root.update_idletasks()
+
+                    # Apply update
+                    success = apply_update_silent(progress_callback=on_progress)
+                    update_success[0] = success
+
+                    if success:
+                        # Update modal status
+                        if hasattr(modal, 'status_label') and modal.status_label.winfo_exists():
+                            modal.status_label.configure(text="✅ Update installed successfully!")
+                        if hasattr(modal, 'progress_bar') and modal.progress_bar.winfo_exists():
+                            modal.progress_bar.set(1.0)
+
+                        # Enable restart button
+                        if hasattr(modal, 'restart_button') and modal.restart_button.winfo_exists():
+                            modal.restart_button.configure(state="normal")
+                            modal.update_complete = True
+
+                        temp_root.update_idletasks()
+                        time.sleep(2)  # Give user time to see success message
+                    else:
+                        if hasattr(modal, 'status_label') and modal.status_label.winfo_exists():
+                            modal.status_label.configure(text="❌ Update failed, launching current version...")
+                        time.sleep(2)
+
+                    # Close modal and quit event loop
+                    temp_root.after(100, lambda: temp_root.quit())
+
+                except Exception as e:
+                    print(f"⚠️ Update failed: {e}")
+                    temp_root.after(100, lambda: temp_root.quit())
+
+            # Start update in background thread
+            import threading
+            update_thread = threading.Thread(target=perform_update, daemon=True)
+            update_thread.start()
+
+            # Run event loop to keep modal visible
+            temp_root.mainloop()
+
+            # Clean up
+            temp_root.destroy()
+
+            # Return True if update succeeded (signal to exit)
+            if update_success[0]:
                 print("✅ Update installed successfully!")
                 print("🔄 Please restart the application to use the new version.")
-                print("\n   Press Enter to exit...")
-                input()
-                return True  # Signal to exit
+                return True
             else:
                 print("❌ Update failed, launching current version...")
-                time.sleep(2)
+                return False
+
         else:
             print("✅ Application is up to date")
 

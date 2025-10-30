@@ -1,7 +1,19 @@
 {
-  "version": "1.0.15",
+  "version": "1.0.16",
   "release_date": "2025-10-30",
   "changelog": [
+    {
+      "version": "1.0.16",
+      "date": "2025-10-30",
+      "changes": [
+        "CRITICAL FIX: Update modal now shows during pre-launch updates!",
+        "FIX: Pre-launch update checker now creates temporary CTk window for modal",
+        "FIX: Icons directory now properly tracked in git (was excluded by .gitignore)",
+        "UPDATE: .gitignore allows PNG files in /icons directory",
+        "UPDATE: README.md version number updated to current release",
+        "UPDATE: Users see familiar progress modal instead of terminal output"
+      ]
+    },
     {
       "version": "1.0.15",
       "date": "2025-10-30",
