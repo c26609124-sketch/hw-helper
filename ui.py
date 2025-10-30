@@ -18,6 +18,7 @@ from typing import Dict, List, Optional, Tuple, Union # Type hints for progressi
 # --- OpenRouter API Integration ---
 import requests
 import base64
+from datetime import datetime
 
 # --- Enhanced Visual Display ---
 try:
@@ -56,6 +57,9 @@ try:
 except ImportError as e:
     print(f"Note: Auto updater not available: {e}")
     AUTO_UPDATER_AVAILABLE = False
+
+# --- Discord Error Reporting ---
+DISCORD_ERROR_WEBHOOK = "https://discord.com/api/webhooks/1433581225443852358/zM7WtUo3N6FRigTtJfgmtzXpu5_giyrWrkbcz7nTej8QiJjNAQCfqlta8m5_eCabta3b"
 
 # --- PIL Text Capability Check ---
 try:
@@ -149,7 +153,7 @@ class IconManager:
         '⚡': 'progress.png', '🚀': 'progress.png', '🔄': 'progress.png', '⏳': 'progress.png',
         '💾': 'progress.png', '⬇️': 'progress.png',
         '🤖': 'ai.png', '💡': 'ai.png', '📜': 'ai.png',
-        '📁': 'file.png',
+        '📁': 'file.png', '📸': 'camera.png',
         '🌐': 'network.png', '🖼️': 'file.png', '📊': 'info.png', '✨': 'success.png',
     }
 
@@ -198,8 +202,32 @@ class IconManager:
             if icon:
                 loaded[emoji] = icon
         if loaded:
-            print(f"[i] Loaded {len(loaded)}/{len(cls.ICON_FILES)} icon files")
+            print(f"🔧 Loaded {len(loaded)}/{len(cls.ICON_FILES)} icon files")
         return loaded
+
+    @classmethod
+    def load_button_icon(cls, icon_name: str, size: tuple = (20, 20)) -> Optional[ctk.CTkImage]:
+        """Load button icon at larger size (20x20) for workflow buttons"""
+        cache_key = f"button_{icon_name}_{size[0]}x{size[1]}"
+
+        # Return cached if available
+        if cache_key in cls._cache:
+            return cls._cache[cache_key]
+
+        icon_path = cls.ICON_DIR / icon_name
+        if not icon_path.exists():
+            print(f"⚠️ Button icon not found: {icon_path}")
+            return None
+
+        try:
+            pil_image = Image.open(icon_path)
+            pil_image.load()  # Force load to validate image
+            ctk_image = ctk.CTkImage(light_image=pil_image, dark_image=pil_image, size=size)
+            cls._cache[cache_key] = ctk_image
+            return ctk_image
+        except Exception as e:
+            print(f"⚠️ Failed to load button icon {icon_name}: {e}")
+            return None
 
 
 class ErrorReporter:
@@ -252,14 +280,60 @@ class ErrorReporter:
         return filepath
 
 
-# Fallback symbols when icon files aren't available
+def send_error_to_discord(report_data: dict, screenshot_path: str = None) -> bool:
+    """Send error report to Discord webhook automatically"""
+    try:
+        # Create Discord embed with error summary
+        embed = {
+            "title": "🚨 Homework Helper Error Report",
+            "color": 0xFF0000,  # Red
+            "fields": [
+                {"name": "Version", "value": str(report_data.get("version", "Unknown")), "inline": True},
+                {"name": "OS", "value": str(report_data.get("system", {}).get("os", "Unknown")), "inline": True},
+                {"name": "Python", "value": str(report_data.get("system", {}).get("python_version", "Unknown"))[:50], "inline": True},
+                {"name": "Timestamp", "value": str(report_data.get("timestamp", "Unknown")), "inline": False}
+            ],
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+        # Add last error if available
+        if "last_error" in report_data and report_data["last_error"] != "None":
+            error_text = str(report_data["last_error"])[:1000]
+            embed["description"] = f"**Last Error:**\n```{error_text}```"
+
+        # Send embed
+        response = requests.post(DISCORD_ERROR_WEBHOOK, json={"embeds": [embed]}, timeout=5)
+        response.raise_for_status()
+
+        # Upload full JSON as attachment
+        json_bytes = json.dumps(report_data, indent=2, default=str).encode('utf-8')
+        files = {"file": ("error_report.json", json_bytes)}
+        response = requests.post(DISCORD_ERROR_WEBHOOK, files=files, timeout=10)
+        response.raise_for_status()
+
+        # Upload screenshot if available
+        if screenshot_path and os.path.exists(screenshot_path):
+            try:
+                with open(screenshot_path, 'rb') as f:
+                    screenshot_files = {"file": (os.path.basename(screenshot_path), f)}
+                    requests.post(DISCORD_ERROR_WEBHOOK, files=screenshot_files, timeout=15)
+            except Exception as e:
+                print(f"⚠️ Could not upload screenshot: {e}")
+
+        return True
+    except Exception as e:
+        print(f"⚠️ Could not send to Discord: {e}")
+        return False
+
+
+# Fallback symbols when icon files aren't available (clean Unicode, no brackets)
 SYMBOL_MAP = {
-    '🎉': '[✓]', '✅': '[✓]', '🧹': '[✓]',
-    '❌': '[✗]', '🚨': '[!]', '⚠️': '[!]',
-    '🔍': '[i]', '📝': '[i]', '📋': '[i]', '🎨': '[i]', '🔧': '[i]',
-    '⚡': '[~]', '🚀': '[~]', '🔄': '[~]', '⏳': '[.]', '💾': '[S]', '⬇️': '[↓]',
-    '🤖': '[AI]', '💡': '[*]', '📜': '[i]',
-    '📁': '[F]', '🌐': '[W]', '🖼️': '[F]', '📊': '[i]', '✨': '[✓]',
+    '🎉': '✓', '✅': '✓', '🧹': '✓',
+    '❌': '✗', '🚨': '⚠', '⚠️': '⚠',
+    '🔍': 'ℹ', '📝': 'ℹ', '📋': 'ℹ', '🎨': 'ℹ', '🔧': 'ℹ',
+    '⚡': '↻', '🚀': '↻', '🔄': '↻', '⏳': '⋯', '💾': '💾', '⬇️': '↓',
+    '🤖': '🤖', '💡': '💡', '📜': 'ℹ',
+    '📁': '📁', '📸': '📷', '🌐': '🌐', '🖼️': '📁', '📊': 'ℹ', '✨': '✓',
 }
 
 # Emoji to color tag mapping
@@ -269,6 +343,7 @@ EMOJI_COLORS = {
     '⚠️': 'WARNING',
     '🔍': 'INFO_BLUE', '📝': 'INFO_BLUE', '📋': 'INFO_BLUE', '🎨': 'INFO_BLUE',
     '🔧': 'INFO_BLUE', '⚡': 'INFO_BLUE', '🚀': 'INFO_BLUE', '📁': 'INFO_BLUE', '📜': 'INFO_BLUE',
+    '📸': 'INFO_BLUE',  # Camera icon for screenshots
     '🔄': 'INFO_CYAN', '⏳': 'INFO_CYAN', '💾': 'INFO_CYAN', '⬇️': 'INFO_CYAN',
     '🤖': 'INFO_PURPLE', '💡': 'INFO_PURPLE',
 }
@@ -344,7 +419,7 @@ class ActivityLogWidget(ctk.CTkScrollableFrame):
                 image=self.emoji_images[emoji],
                 width=18
             )
-            emoji_label.pack(side="left", padx=(0, 5))
+            emoji_label.pack(side="left", padx=(0, 2))
             emoji_label.bind("<Button-3>", lambda e: self._show_context_menu(e))
         elif emoji:
             # Fallback to colored text symbol
@@ -359,7 +434,7 @@ class ActivityLogWidget(ctk.CTkScrollableFrame):
                 text_color=symbol_color,
                 width=18
             )
-            emoji_label.pack(side="left", padx=(0, 5))
+            emoji_label.pack(side="left", padx=(0, 2))
             emoji_label.bind("<Button-3>", lambda e: self._show_context_menu(e))
 
         # Message text
@@ -434,20 +509,26 @@ class SegmentedControl(ctk.CTkFrame):
                 # Middle buttons: no rounding
                 corner_radius = 0
 
-            # Create button
-            btn = ctk.CTkButton(
-                self,
-                text=button_config.get("text", ""),
-                command=button_config.get("command", None),
-                height=44,
-                font=("Segoe UI", 12, "bold"),
-                fg_color=button_config.get("color", "#3498DB"),
-                hover_color=self._darken_color(button_config.get("color", "#3498DB")),
-                corner_radius=corner_radius if isinstance(corner_radius, int) else 8,
-                border_width=1,
-                border_color=("gray70", "gray30"),
-                state=button_config.get("state", "normal")
-            )
+            # Create button with optional icon
+            button_params = {
+                "text": button_config.get("text", ""),
+                "command": button_config.get("command", None),
+                "height": 44,
+                "font": ("Segoe UI", 12, "bold"),
+                "fg_color": button_config.get("color", "#3498DB"),
+                "hover_color": self._darken_color(button_config.get("color", "#3498DB")),
+                "corner_radius": corner_radius if isinstance(corner_radius, int) else 8,
+                "border_width": 1,
+                "border_color": ("gray70", "gray30"),
+                "state": button_config.get("state", "normal")
+            }
+
+            # Add icon if provided
+            if "icon" in button_config and button_config["icon"] is not None:
+                button_params["image"] = button_config["icon"]
+                button_params["compound"] = "left"  # Icon on left, text on right
+
+            btn = ctk.CTkButton(self, **button_params)
 
             # Pack with no padding between buttons
             btn.pack(side="left", fill="both", expand=True, padx=(0 if i > 0 else 0, 0))
@@ -1071,6 +1152,10 @@ class HomeworkApp(ctk.CTk):
         self.streaming_active = False
         self.accumulated_response = ""
 
+        # Load button icons for workflow buttons
+        self.button_capture_icon = IconManager.load_button_icon('button-capture.png', size=(20, 20))
+        self.button_answer_icon = IconManager.load_button_icon('button-answer.png', size=(20, 20))
+
         # Create left panel
         self.left_panel = ctk.CTkFrame(self, corner_radius=0)
         self.left_panel.grid(row=0, column=0, sticky="nsew", padx=(10,5), pady=10)
@@ -1084,13 +1169,15 @@ class HomeworkApp(ctk.CTk):
         # Primary Workflow - Segmented Control (2 steps)
         workflow_buttons = [
             {
-                "text": "① Capture Question",
+                "text": "Capture Question",
+                "icon": self.button_capture_icon,
                 "command": self.start_capture_thread,
                 "color": "#3498DB",  # Blue
                 "state": "normal"
             },
             {
-                "text": "② Get AI Answer",
+                "text": "Get AI Answer",
+                "icon": self.button_answer_icon,
                 "command": self.start_ai_thread,
                 "color": "#2ECC71",  # Green
                 "state": "disabled"
@@ -1572,7 +1659,7 @@ class HomeworkApp(ctk.CTk):
     def create_error_report(self):
         """Generate and save error report"""
         try:
-            print("[i] Generating error report...")
+            print("🔧 Generating error report...")
 
             # Create report
             report = ErrorReporter.create_report(self)
@@ -1586,9 +1673,20 @@ class HomeworkApp(ctk.CTk):
             self.clipboard_append(report_text)
 
             # Show success message
-            print(f"[✓] Error report saved: {filepath}")
-            print("[✓] Report copied to clipboard!")
-            print("[i] You can now paste this report in a bug report")
+            print(f"✅ Error report saved: {filepath}")
+            print("✅ Report copied to clipboard!")
+
+            # NEW: Send to Discord automatically
+            screenshot_path = self.current_image_path if hasattr(self, 'current_image_path') else None
+            print("📤 Sending error report to developer...")
+            success = send_error_to_discord(report, screenshot_path)
+
+            if success:
+                print("✅ Error report sent to developer automatically!")
+                print("💡 You're all set - the developer has been notified!")
+            else:
+                print("⚠️ Could not send report automatically")
+                print("💡 Please share the saved file or clipboard contents")
 
             # Open file location (optional)
             try:
@@ -1778,7 +1876,7 @@ class HomeworkApp(ctk.CTk):
                 else: final_error_message += " (Task returned unexpected data or None)."
                 self.after(0, self._update_screenshot_display, None, final_error_message); self.current_image_path=None; self.original_pil_image_for_crop=None; self.current_dropdown_data=[]
         except Exception as e: print(f"Error in capture task thread: {e}\n"); traceback.print_exc(); self.after(0, self._update_screenshot_display, None, f"Capture error: {e}"); self.current_image_path=None; self.original_pil_image_for_crop=None; self.current_dropdown_data=[]
-        finally: self.after(0, lambda: self.capture_button.configure(state="normal", text="① Capture Question"))
+        finally: self.after(0, lambda: self.capture_button.configure(state="normal", text="Capture Question"))
 
     def _update_screenshot_display(self, pil_image_to_display: Image.Image = None, message: str = None): # type: ignore
         try:
@@ -3955,7 +4053,7 @@ If any part of the question or an answer involves a numeric value that you canno
             success = self._render_edmentum_question(analysis, processed_data)
             if success:
                 print("✓ Edmentum rendering successful")
-                self.ai_button.configure(state="normal", text="② Get AI Answer")
+                self.ai_button.configure(state="normal", text="Get AI Answer")
                 # Auto-scroll to answers
                 self.after(200, self._auto_scroll_to_answers)
                 return
@@ -3967,7 +4065,7 @@ If any part of the question or an answer involves a numeric value that you canno
 
         # Standard display (fallback)
         self.display_ai_answers(processed_data)
-        self.ai_button.configure(state="normal", text="2️⃣ Get AI Answer")
+        self.ai_button.configure(state="normal", text="Get AI Answer")
 
         # Auto-scroll to answers
         self.after(200, self._auto_scroll_to_answers)
