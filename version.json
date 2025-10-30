@@ -1,7 +1,18 @@
 {
-  "version": "1.0.10",
+  "version": "1.0.11",
   "release_date": "2025-10-30",
   "changelog": [
+    {
+      "version": "1.0.11",
+      "date": "2025-10-30",
+      "changes": [
+        "CRITICAL FIX: Application startup crash resolved (AttributeError fixed!)",
+        "FIX: Added hasattr() checks for recrop_button references",
+        "FIX: Re-crop functionality now gracefully handles button absence",
+        "UPDATE: All 4 recrop_button references now safely check existence first",
+        "STABILITY: App now launches successfully on all platforms"
+      ]
+    },
     {
       "version": "1.0.10",
       "date": "2025-10-30",

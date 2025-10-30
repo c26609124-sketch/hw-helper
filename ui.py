@@ -1477,7 +1477,7 @@ class HomeworkApp(ctk.CTk):
         if hasattr(self, 'overlay_bottom'): self.overlay_bottom.place_forget()
         if hasattr(self, 'overlay_left'): self.overlay_left.place_forget()
         if hasattr(self, 'overlay_right'): self.overlay_right.place_forget()
-        self.recrop_button.configure(state="disabled")
+        if hasattr(self, 'recrop_button'): self.recrop_button.configure(state="disabled")
         is_image_present = hasattr(self.screenshot_image_label, 'image') and self.screenshot_image_label.image is not None # type: ignore
         if not self.current_image_path or not os.path.exists(self.current_image_path) or not is_image_present: self.ai_button.configure(state="disabled")
         self.crop_selection_coords = None; self.active_drag_mode = None
@@ -1491,7 +1491,8 @@ class HomeworkApp(ctk.CTk):
         x1, y1 = int(max(0, x1)), int(max(0, y1)); x2, y2 = int(min(img_w, x2)), int(min(img_h, y2))
         sel_w, sel_h = x2 - x1, y2 - y1
         if sel_w < MIN_SELECTION_SIZE or sel_h < MIN_SELECTION_SIZE:
-            self._hide_crop_visuals(); self.recrop_button.configure(state="disabled")
+            self._hide_crop_visuals()
+            if hasattr(self, 'recrop_button'): self.recrop_button.configure(state="disabled")
         else:
             self.overlay_top.place(x=0, y=0, width=img_w, height=y1)
             self.overlay_bottom.place(x=0, y=y2, width=img_w, height=img_h - y2)
@@ -1512,7 +1513,7 @@ class HomeworkApp(ctk.CTk):
             for pos_key, (px, py) in handle_positions_coords.items():
                 if pos_key in self.handles and self.handles[pos_key].winfo_exists():
                     self.handles[pos_key].place(x=px, y=py); self.handles[pos_key].lift()
-            self.recrop_button.configure(state="normal")
+            if hasattr(self, 'recrop_button'): self.recrop_button.configure(state="normal")
         self.crop_selection_coords = (x1, y1, x2, y2)
 
     def on_image_area_press(self, event):
@@ -1561,7 +1562,7 @@ class HomeworkApp(ctk.CTk):
                 r_x1, r_y1, r_x2, r_y2 = self.crop_selection_coords
                 final_x1,final_y1 = min(r_x1,r_x2),min(r_y1,r_y2); final_x2,final_y2 = max(r_x1,r_x2),max(r_y1,r_y2)
                 self.crop_selection_coords = (final_x1, final_y1, final_x2, final_y2); self._update_crop_visuals()
-            if self.recrop_button.cget("state") == "disabled" and self.active_drag_mode == "new_selection": print("Selection too small or invalid on release.")
+            if hasattr(self, 'recrop_button') and self.recrop_button.cget("state") == "disabled" and self.active_drag_mode == "new_selection": print("Selection too small or invalid on release.")
         self.active_drag_mode = None; self.drag_start_mouse_pos_relative_to_image = None; self.drag_start_selection_coords = None; self.drag_start_mouse_root_pos = None
 
     def trigger_recrop(self):
