@@ -3620,6 +3620,64 @@ If any part of the question or an answer involves a numeric value that you canno
             traceback.print_exc()
             return False
 
+def pre_launch_update_check():
+    """
+    CRITICAL: Check for updates BEFORE initializing the app
+    This prevents being stuck with broken code that crashes before update check
+    """
+    if not AUTO_UPDATER_AVAILABLE:
+        return False
+
+    try:
+        print("🔍 Checking for updates before launch...")
+
+        from auto_updater import check_for_updates_silent, apply_update_silent
+        update_available, new_version, changelog = check_for_updates_silent()
+
+        if update_available:
+            print(f"🎉 Update available: v{new_version}")
+            print("\n📋 What's new:")
+            for change in changelog[:5]:  # Show first 5 changes
+                print(f"  • {change}")
+
+            print("\n⬇️ Downloading update...")
+
+            # Apply update with simple progress
+            def progress_callback(current, total, filename, percentage):
+                if percentage % 20 == 0:  # Print every 20%
+                    print(f"   {percentage}% - {filename}")
+
+            success = apply_update_silent(progress_callback=progress_callback)
+
+            if success:
+                print("✅ Update installed successfully!")
+                print("🔄 Please restart the application to use the new version.")
+                print("\n   Press Enter to exit...")
+                input()
+                return True  # Signal to exit
+            else:
+                print("❌ Update failed, launching current version...")
+                time.sleep(2)
+        else:
+            print("✅ Application is up to date")
+
+    except Exception as e:
+        print(f"⚠️ Pre-launch update check failed: {e}")
+        print("   Launching current version...")
+        time.sleep(1)
+
+    return False
+
+
 if __name__ == "__main__":
+    # CRITICAL: Check for updates BEFORE creating UI
+    # This prevents being stuck with broken code
+    should_exit = pre_launch_update_check()
+
+    if should_exit:
+        import sys
+        sys.exit(0)
+
+    # Only create app if no update was installed
     app = HomeworkApp()
     app.mainloop()
