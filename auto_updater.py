@@ -152,7 +152,7 @@ class AutoUpdater:
                 content = response.read()
                 # Write text files with UTF-8 encoding, binary files as-is
                 if dest_path.suffix in ['.py', '.txt', '.md', '.json', '.sh', '.bat']:
-                    with open(dest_path, 'w', encoding='utf-8') as f:
+                    with open(dest_path, 'w', encoding='utf-8', newline='') as f:
                         f.write(content.decode('utf-8'))
                 else:
                     with open(dest_path, 'wb') as f:

@@ -1,7 +1,18 @@
 {
-  "version": "1.0.11",
+  "version": "1.0.12",
   "release_date": "2025-10-30",
   "changelog": [
+    {
+      "version": "1.0.12",
+      "date": "2025-10-30",
+      "changes": [
+        "CRITICAL FIX: File corruption on Windows resolved (syntax error fixed!)",
+        "FIX: Auto-updater now uses newline='' for cross-platform file writes",
+        "FIX: Base64 emoji data and long lines no longer corrupted during update",
+        "UPDATE: Prevents automatic line ending conversion that corrupted files",
+        "STABILITY: ui.py downloads correctly on Windows without syntax errors"
+      ]
+    },
     {
       "version": "1.0.11",
       "date": "2025-10-30",
