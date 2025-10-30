@@ -178,15 +178,15 @@ class StdoutRedirector:
         self.app = app_instance
         self.text_widget.configure(state='disabled')
 
-        # Configure color tags
+        # Configure color tags (CTkTextbox doesn't allow font in tags)
         self.text_widget.tag_config("TIMESTAMP", foreground="gray60")
-        self.text_widget.tag_config("ERROR", foreground="#E74C3C", font=("Consolas", 10, "bold"))
-        self.text_widget.tag_config("CRITICAL", foreground="#C0392B", font=("Consolas", 10, "bold"))
-        self.text_widget.tag_config("WARNING", foreground="#F39C12", font=("Consolas", 10, "bold"))
-        self.text_widget.tag_config("SUCCESS", foreground="#2ECC71", font=("Consolas", 10, "bold"))
-        self.text_widget.tag_config("INFO_BLUE", foreground="#3498DB", font=("Consolas", 10, "bold"))
-        self.text_widget.tag_config("INFO_CYAN", foreground="#1ABC9C", font=("Consolas", 10, "bold"))
-        self.text_widget.tag_config("INFO_PURPLE", foreground="#9B59B6", font=("Consolas", 10, "bold"))
+        self.text_widget.tag_config("ERROR", foreground="#E74C3C")
+        self.text_widget.tag_config("CRITICAL", foreground="#C0392B")
+        self.text_widget.tag_config("WARNING", foreground="#F39C12")
+        self.text_widget.tag_config("SUCCESS", foreground="#2ECC71")
+        self.text_widget.tag_config("INFO_BLUE", foreground="#3498DB")
+        self.text_widget.tag_config("INFO_CYAN", foreground="#1ABC9C")
+        self.text_widget.tag_config("INFO_PURPLE", foreground="#9B59B6")
         self.text_widget.tag_config("DEBUG", foreground="#95A5A6")
 
         # Default info color (adaptive to theme)
