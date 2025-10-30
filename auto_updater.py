@@ -47,7 +47,7 @@ class AutoUpdater:
         """Load current version from version.json"""
         try:
             if self.version_file.exists():
-                with open(self.version_file, 'r') as f:
+                with open(self.version_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     return data.get('version', '0.0.0')
         except Exception as e:
@@ -68,9 +68,10 @@ class AutoUpdater:
 
             req = urllib.request.Request(url)
             req.add_header('User-Agent', 'HW-Helper-AutoUpdater/1.0')
+            req.add_header('Cache-Control', 'no-cache')
 
             with urllib.request.urlopen(req, timeout=10) as response:
-                data = json.loads(response.read().decode())
+                data = json.loads(response.read().decode('utf-8'))
                 return data
 
         except urllib.error.URLError as e:
@@ -148,8 +149,14 @@ class AutoUpdater:
             req.add_header('User-Agent', 'HW-Helper-AutoUpdater/1.0')
 
             with urllib.request.urlopen(req, timeout=30) as response:
-                with open(dest_path, 'wb') as f:
-                    f.write(response.read())
+                content = response.read()
+                # Write text files with UTF-8 encoding, binary files as-is
+                if dest_path.suffix in ['.py', '.txt', '.md', '.json', '.sh', '.bat']:
+                    with open(dest_path, 'w', encoding='utf-8') as f:
+                        f.write(content.decode('utf-8'))
+                else:
+                    with open(dest_path, 'wb') as f:
+                        f.write(content)
 
             logger.info(f"Downloaded to {dest_path}")
             return True

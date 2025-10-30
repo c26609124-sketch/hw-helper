@@ -1,7 +1,19 @@
 {
-  "version": "1.0.9",
+  "version": "1.0.10",
   "release_date": "2025-10-30",
   "changelog": [
+    {
+      "version": "1.0.10",
+      "date": "2025-10-30",
+      "changes": [
+        "CRITICAL FIX: Windows UTF-8 encoding support (emoji display fixed!)",
+        "FIX: Auto-updater now explicitly uses UTF-8 for all text files",
+        "FIX: Version.json now loads correctly on Windows machines",
+        "FIX: Added Cache-Control header to bypass GitHub CDN cache",
+        "UPDATE: Text files (.py, .json, .txt, .md) saved with UTF-8 encoding",
+        "UPDATE: Binary files (.exe) saved as-is without encoding conversion"
+      ]
+    },
     {
       "version": "1.0.9",
       "date": "2025-10-30",
