@@ -425,7 +425,7 @@ class ActivityLogWidget(ctk.CTkScrollableFrame):
             width=70,
             anchor="w"
         )
-        timestamp_label.pack(side="left", padx=(2, 5))
+        timestamp_label.pack(side="left", padx=(2, 2))  # Reduced from (2, 5) to (2, 2)
         timestamp_label.bind("<Button-3>", lambda e: self._show_context_menu(e))
 
         # Icon display (use real icon file or fallback to colored symbol)
@@ -923,6 +923,12 @@ class UpdateModal(ctk.CTkToplevel):
         self.emoji_font = "Segoe UI Emoji" if platform.system() == "Windows" else "Apple Color Emoji"
         self.default_font = "Segoe UI" if platform.system() == "Windows" else "Arial"
 
+        # Detect if this update contains critical fixes
+        self.has_critical_fixes = any(
+            "CRITICAL FIX:" in change or "CRITICAL:" in change
+            for change in self.changelog
+        )
+
         # Load icons for UpdateModal
         self.celebration_icon = IconManager.load_icon('celebration.png')
         self.clipboard_icon = IconManager.load_icon('clipboard.png')
@@ -1003,6 +1009,24 @@ class UpdateModal(ctk.CTkToplevel):
             text_color="#1a73e8"
         )
         title_label.pack(side="left")
+
+        # Critical update badge (if applicable)
+        if self.has_critical_fixes:
+            critical_badge = ctk.CTkFrame(
+                header_frame,
+                fg_color="#ea4335",  # Red
+                corner_radius=12,
+                height=28
+            )
+            critical_badge.pack(side="left", padx=(10, 0))
+
+            badge_label = ctk.CTkLabel(
+                critical_badge,
+                text="⚠️ CRITICAL",
+                font=(self.default_font, 11, "bold"),
+                text_color="white"
+            )
+            badge_label.pack(padx=10, pady=4)
 
         # Changelog section
         changelog_frame = ctk.CTkFrame(main_frame, fg_color="#2b2b2b", corner_radius=10)
@@ -1745,28 +1769,118 @@ class HomeworkApp(ctk.CTk):
             self.current_image_path = None
 
     def _capture_answer_display(self) -> Optional[str]:
-        """Capture answer display area as PNG for error reporting"""
-        try:
-            # Get answer scroll frame widget
-            widget = self.answer_scroll_frame
+        """
+        Capture answer display area as PNG - SECURE widget render (no screen capture)
 
-            # Update widget to ensure rendering complete
+        Security: Does NOT use screen coordinates or PIL.ImageGrab.
+        Only renders the widget tree internally - no external windows can be captured.
+        """
+        try:
+            from PIL import Image, ImageDraw, ImageFont
+
+            widget = self.answer_scroll_frame
             widget.update_idletasks()
 
             # Get widget dimensions
-            x = widget.winfo_rootx()
-            y = widget.winfo_rooty()
-            width = widget.winfo_width()
-            height = widget.winfo_height()
+            width = max(widget.winfo_width(), 400)  # Minimum width for readability
+            height = max(widget.winfo_height(), 300)  # Minimum height
 
-            # Capture screenshot using PIL/ImageGrab
-            import PIL.ImageGrab
-            screenshot = PIL.ImageGrab.grab(bbox=(x, y, x + width, y + height))
+            # Create blank image with dark background
+            img = Image.new('RGB', (width, height), color='#1e1e1e')
+            draw = ImageDraw.Draw(img)
+
+            # Try to load a basic font, fallback to default
+            try:
+                font = ImageFont.truetype("arial.ttf", 11)
+                font_bold = ImageFont.truetype("arialbd.ttf", 12)
+            except:
+                font = ImageFont.load_default()
+                font_bold = font
+
+            def render_widget(w, x_offset=0, y_offset=0):
+                """Recursively render widget content to PIL image"""
+                try:
+                    # Get widget position and dimensions
+                    try:
+                        rel_x = w.winfo_x()
+                        rel_y = w.winfo_y()
+                        w_width = w.winfo_width()
+                        w_height = w.winfo_height()
+                    except:
+                        return  # Widget not rendered yet
+
+                    abs_x = x_offset + rel_x
+                    abs_y = y_offset + rel_y
+
+                    # Skip if outside bounds
+                    if abs_x >= width or abs_y >= height or abs_x + w_width < 0 or abs_y + w_height < 0:
+                        return
+
+                    # Render based on widget type
+                    widget_class = w.__class__.__name__
+
+                    if 'Label' in widget_class:
+                        # Render text labels
+                        try:
+                            text = w.cget("text")
+                            if text and text.strip():
+                                text_color = 'white'
+                                try:
+                                    color_cfg = w.cget("text_color")
+                                    if isinstance(color_cfg, str):
+                                        text_color = color_cfg
+                                    elif isinstance(color_cfg, tuple):
+                                        text_color = color_cfg[0]
+                                except:
+                                    pass
+
+                                # Truncate very long text
+                                if len(text) > 100:
+                                    text = text[:97] + "..."
+
+                                draw.text((abs_x + 5, abs_y + 3), text, fill=text_color, font=font)
+                        except:
+                            pass
+
+                    elif 'Frame' in widget_class:
+                        # Render frame backgrounds
+                        try:
+                            fg_color = w.cget("fg_color")
+                            if fg_color and fg_color != "transparent":
+                                color = fg_color
+                                if isinstance(fg_color, tuple):
+                                    color = fg_color[0]
+
+                                # Draw rectangle
+                                draw.rectangle(
+                                    [abs_x, abs_y, min(abs_x + w_width, width-1), min(abs_y + w_height, height-1)],
+                                    fill=color
+                                )
+                        except:
+                            pass
+
+                    # Recursively render children
+                    try:
+                        for child in w.winfo_children():
+                            render_widget(child, abs_x, abs_y)
+                    except:
+                        pass
+
+                except Exception:
+                    # Skip widgets that cause errors
+                    pass
+
+            # Render the entire widget tree
+            render_widget(widget)
+
+            # Add watermark to indicate this is a secure render
+            draw.text((5, height - 20), "Secure Widget Render (No Screen Capture)", fill='#666666', font=font)
 
             # Save to temp file
             temp_path = f"./temp_answer_display_{int(time.time())}.png"
-            screenshot.save(temp_path)
+            img.save(temp_path)
             return temp_path
+
         except Exception as e:
             print(f"⚠️ Could not capture answer display: {e}")
             return None

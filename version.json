@@ -1,7 +1,17 @@
 {
-  "version": "1.0.19",
+  "version": "1.0.20",
   "release_date": "2025-10-30",
   "changelog": [
+    {
+      "version": "1.0.20",
+      "date": "2025-10-30",
+      "changes": [
+        "CRITICAL FIX: Answer screenshot now secure (widget render, not screen capture)",
+        "NEW: CRITICAL UPDATE badge in update modal (prominent red alert)",
+        "FIX: Activity log padding reduced (timestamp→icon 5px→2px)",
+        "SECURITY: Eliminated privacy risk in error reporting (no screen capture leak)"
+      ]
+    },
     {
       "version": "1.0.19",
       "date": "2025-10-30",
