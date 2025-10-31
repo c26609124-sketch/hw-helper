@@ -422,10 +422,10 @@ class ActivityLogWidget(ctk.CTkScrollableFrame):
             text=timestamp,
             font=("Consolas", 10),
             text_color=COLOR_VALUES['TIMESTAMP'],
-            width=70,
+            width=58,  # Reduced from 70 to 58 (tight fit for [HH:MM:SS])
             anchor="w"
         )
-        timestamp_label.pack(side="left", padx=(2, 2))  # Reduced from (2, 5) to (2, 2)
+        timestamp_label.pack(side="left", padx=(2, 2))
         timestamp_label.bind("<Button-3>", lambda e: self._show_context_menu(e))
 
         # Icon display (use real icon file or fallback to colored symbol)
