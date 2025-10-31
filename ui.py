@@ -1960,6 +1960,116 @@ class HomeworkApp(ctk.CTk):
             print(f"⚠️ Could not capture answer display: {e}")
             return None
 
+    def _annotate_screenshot_with_boxes(self, hot_spot_answers: list) -> Optional[str]:
+        """
+        Draw bounding boxes on current screenshot for hot spot answers
+
+        Args:
+            hot_spot_answers: List of answer dicts with content_type='hot_spot' and hotspot_data
+
+        Returns:
+            Path to annotated screenshot, or None if failed
+        """
+        try:
+            from PIL import Image, ImageDraw
+            import time
+
+            if not self.current_image_path or not hot_spot_answers:
+                print("⚠️ No screenshot or hot spot answers to annotate")
+                return None
+
+            # Load current screenshot
+            img = Image.open(self.current_image_path)
+            width, height = img.size
+            draw = ImageDraw.Draw(img)
+
+            # Edmentum green color for bounding boxes
+            EDMENTUM_GREEN = '#2e7d32'
+            BOX_WIDTH = 4
+
+            print(f"📦 Drawing {len(hot_spot_answers)} bounding boxes on screenshot")
+
+            for answer in hot_spot_answers:
+                hotspot_data = answer.get('hotspot_data', {})
+                text_content = answer.get('text_content', '?')
+
+                if not hotspot_data:
+                    print(f"⚠️ No hotspot_data for answer: {text_content}")
+                    continue
+
+                # Convert percentage coordinates to pixels
+                x_percent = hotspot_data.get('x_percent', 0)
+                y_percent = hotspot_data.get('y_percent', 0)
+                width_percent = hotspot_data.get('width_percent', 10)
+                height_percent = hotspot_data.get('height_percent', 10)
+
+                x = int(x_percent / 100 * width)
+                y = int(y_percent / 100 * height)
+                box_width = int(width_percent / 100 * width)
+                box_height = int(height_percent / 100 * height)
+
+                # Ensure box stays within image bounds
+                x = max(0, min(x, width - box_width))
+                y = max(0, min(y, height - box_height))
+                box_width = min(box_width, width - x)
+                box_height = min(box_height, height - y)
+
+                # Draw rectangle
+                draw.rectangle(
+                    [x, y, x + box_width, y + box_height],
+                    outline=EDMENTUM_GREEN,
+                    width=BOX_WIDTH
+                )
+
+                print(f"   ✓ Drew box for '{text_content}' at ({x_percent:.1f}%, {y_percent:.1f}%) -> ({x}, {y})")
+
+            # Save annotated image
+            temp_path = f"./temp_annotated_{int(time.time())}.png"
+            img.save(temp_path, quality=95)
+            print(f"✅ Saved annotated screenshot: {temp_path}")
+
+            return temp_path
+
+        except Exception as e:
+            print(f"❌ Failed to annotate screenshot: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+
+    def _update_screenshot_from_path(self, image_path: str):
+        """
+        Update screenshot display from an image file path
+
+        Args:
+            image_path: Path to image file to display
+        """
+        try:
+            from PIL import Image
+
+            if not image_path or not os.path.exists(image_path):
+                print(f"⚠️ Image path does not exist: {image_path}")
+                return
+
+            # Load image
+            pil_image = Image.open(image_path)
+
+            # Update screenshot display (doesn't clear answers)
+            if hasattr(self, 'screenshot_label') and self.screenshot_label.winfo_exists():
+                # Convert PIL to CTkImage for display
+                from customtkinter import CTkImage
+                ctk_image = CTkImage(light_image=pil_image, dark_image=pil_image, size=(600, 400))
+                self.screenshot_label.configure(image=ctk_image, text="")
+                self.screenshot_label.image = ctk_image  # Keep reference
+                print(f"📸 Updated screenshot display from: {os.path.basename(image_path)}")
+
+            # Update current_image_path
+            self.current_image_path = image_path
+
+        except Exception as e:
+            print(f"❌ Failed to update screenshot display: {e}")
+            import traceback
+            traceback.print_exc()
+
     def create_error_report(self):
         """Generate and send error report automatically"""
         try:
@@ -3321,6 +3431,74 @@ If it's a **text selection / hot text question** (select excerpts from a passage
 
 4. **WHY THIS MATTERS**: The UI will display the full passage with selected excerpts highlighted in blue, matching Edmentum's hot text display.
 
+If it's a **hot spot question** (click specific locations on an image):
+
+**CRITICAL HOT SPOT RULES:**
+
+1. **IDENTIFY IMAGE LOCATIONS**: Analyze the image to determine the correct locations/objects to click
+   - Example: "Which of the organisms shown in the food web is preyed upon by seals?"
+   - You must identify ALL correct locations (e.g., penguin, krill, cod)
+
+2. **PROVIDE PERCENTAGE-BASED COORDINATES**: For each correct location, calculate bounding box coordinates as percentages
+   - Coordinates are relative to the image dimensions (0-100%)
+   - `x_percent`: Left edge of box as % of image width (0 = left edge, 100 = right edge)
+   - `y_percent`: Top edge of box as % of image height (0 = top edge, 100 = bottom edge)
+   - `width_percent`: Box width as % of image width (typically 8-15% for organisms/objects)
+   - `height_percent`: Box height as % of image height (typically 8-15% for organisms/objects)
+
+3. **ANSWER FORMAT**: Each hot spot location should be a separate answer object:
+   ```json
+   {
+     "answer_id": "hot_spot_1",
+     "content_type": "hot_spot",
+     "hotspot_data": {
+       "x_percent": 15.5,
+       "y_percent": 25.0,
+       "width_percent": 10.0,
+       "height_percent": 12.0
+     },
+     "text_content": "Penguin",
+     "is_correct_option": true,
+     "confidence": 0.95,
+     "explanation": "Penguins are preyed upon by seals as shown by the arrow in the food web"
+   }
+   ```
+
+4. **COORDINATE ACCURACY**:
+   - Estimate object positions by analyzing the image layout
+   - For organisms/objects in a grid, calculate positions based on grid layout
+   - Ensure bounding box fully contains the target object
+   - If multiple objects, provide separate hot_spot answers for each
+
+5. **TEXT CONTENT**: Include the name/description of the object in `text_content` for display in answer container
+
+**EXAMPLE - Hot Spot Food Web Question:**
+```json
+{
+  "identified_question": "Which of the organisms shown in the food web is preyed upon by seals?",
+  "answers": [
+    {
+      "answer_id": "hot_spot_1",
+      "content_type": "hot_spot",
+      "hotspot_data": {"x_percent": 15, "y_percent": 30, "width_percent": 12, "height_percent": 15},
+      "text_content": "Penguin",
+      "is_correct_option": true,
+      "confidence": 0.95
+    },
+    {
+      "answer_id": "hot_spot_2",
+      "content_type": "hot_spot",
+      "hotspot_data": {"x_percent": 50, "y_percent": 55, "width_percent": 10, "height_percent": 10},
+      "text_content": "Krill",
+      "is_correct_option": true,
+      "confidence": 0.90
+    }
+  ]
+}
+```
+
+6. **WHY THIS MATTERS**: The UI will draw green bounding boxes on the screenshot to visually indicate the correct click locations, while also displaying the text names in the answer container.
+
 **Regarding Dropdown Menus and Provided Options:**
 When you encounter a question item in the image:
 1.  First, **visually assess the item in the image**. Does it clearly look like a dropdown menu (e.g., a box with a selection arrow, a list that implies selection, or an explicit instruction to select from options that are *visually part of that question element*)?
@@ -4413,7 +4591,8 @@ If any part of the question or an answer involves a numeric value that you canno
                     analysis,
                     question_text,
                     answers,
-                    question_number=None
+                    question_number=None,
+                    ui_instance=self  # Pass self for hot_spot screenshot annotation
                 )
                 return success
             else:

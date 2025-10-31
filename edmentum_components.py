@@ -865,6 +865,106 @@ class EdmentumHotText(EdmentumComponent):
         ctk.CTkLabel(selections_container, text="", height=5).pack()
 
 
+class EdmentumHotSpot(EdmentumComponent):
+    """
+    Hot spot question - click specific locations on an image
+
+    NOTE: Bounding boxes are drawn on the screenshot (not in answer container)
+    This component only displays the text list of correct locations
+    """
+
+    def __init__(self, parent, question_text: str, answers: List[Dict]):
+        """
+        Args:
+            parent: Parent widget (answer container)
+            question_text: The question/instruction text
+            answers: List of hot_spot answer dicts with text_content
+        """
+        super().__init__(parent)
+        self.question_text = question_text
+        self.answers = answers
+
+        self._build_ui()
+
+    def _build_ui(self):
+        """Build the hot spot answer interface"""
+        # Question text
+        question_label = ctk.CTkLabel(
+            self.parent,
+            text=self.question_text,
+            font=(EDMENTUM_STYLES['font_family'], EDMENTUM_STYLES['font_size_question']),
+            text_color=self.get_color('gray_dark'),
+            wraplength=700,
+            justify="left",
+            anchor="w"
+        )
+        question_label.pack(fill="x", pady=(0, 15))
+
+        # Info box explaining that boxes are on screenshot
+        info_container = ctk.CTkFrame(
+            self.parent,
+            fg_color=self.get_color('bg_info'),
+            corner_radius=EDMENTUM_STYLES['border_radius'],
+            border_width=1,
+            border_color=EDMENTUM_STYLES['blue_border']
+        )
+        info_container.pack(fill="x", pady=(0, 15))
+
+        info_label = ctk.CTkLabel(
+            info_container,
+            text="📍 Green bounding boxes have been drawn on the screenshot showing the correct locations.",
+            font=(EDMENTUM_STYLES['font_family'], 12),
+            text_color=self.get_color('gray_dark'),
+            wraplength=700,
+            justify="left"
+        )
+        info_label.pack(padx=15, pady=10)
+
+        # Correct locations container
+        locations_container = ctk.CTkFrame(
+            self.parent,
+            fg_color=("#d4edda", "#1a311a"),  # Light/dark green
+            corner_radius=EDMENTUM_STYLES['border_radius'],
+            border_width=2,
+            border_color=EDMENTUM_STYLES['green_correct']
+        )
+        locations_container.pack(fill="x", pady=10)
+
+        # Title
+        title_label = ctk.CTkLabel(
+            locations_container,
+            text="✅ Correct Locations:",
+            font=(EDMENTUM_STYLES['font_family'], 16, "bold"),
+            text_color=EDMENTUM_STYLES['green_correct']
+        )
+        title_label.pack(anchor="w", padx=15, pady=(15, 10))
+
+        # Show each location in large, bold format
+        for answer in self.answers:
+            text_content = answer.get('text_content', '?')
+
+            location_frame = ctk.CTkFrame(
+                locations_container,
+                fg_color=EDMENTUM_STYLES['green_correct'],
+                corner_radius=8,
+                height=40
+            )
+            location_frame.pack(fill="x", padx=15, pady=5)
+
+            location_label = ctk.CTkLabel(
+                location_frame,
+                text=f"• {text_content}",
+                font=(EDMENTUM_STYLES['font_family'], 18, "bold"),
+                text_color="white",
+                wraplength=650,
+                anchor="w"
+            )
+            location_label.pack(fill="both", expand=True, padx=15, pady=10)
+
+        # Bottom padding
+        ctk.CTkLabel(locations_container, text="", height=5).pack()
+
+
 # ============================================================================
 # QUESTION RENDERER (Routes to appropriate component)
 # ============================================================================
@@ -876,7 +976,7 @@ class EdmentumQuestionRenderer:
     """
 
     def render_question(self, parent, analysis: dict, question_text: str,
-                       answers: list, question_number=None) -> bool:
+                       answers: list, question_number=None, ui_instance=None) -> bool:
         """
         Render question using appropriate component
 
@@ -886,6 +986,7 @@ class EdmentumQuestionRenderer:
             question_text: The identified_question text
             answers: List of answer objects
             question_number: Optional question number
+            ui_instance: UI instance (needed for hot_spot screenshot annotation)
 
         Returns:
             True if rendered successfully, False to fallback to standard display
@@ -895,6 +996,8 @@ class EdmentumQuestionRenderer:
         try:
             if strategy == 'edmentum_hot_text':
                 return self._render_hot_text(parent, question_text, answers)
+            elif strategy == 'edmentum_hot_spot':
+                return self._render_hot_spot(parent, question_text, answers, ui_instance)
             elif strategy in ('edmentum_matched_pairs', 'edmentum_matching_pairs'):
                 return self._render_matched_pairs(parent, question_text, answers)
             elif strategy == 'edmentum_multiple_choice':
@@ -937,6 +1040,55 @@ class EdmentumQuestionRenderer:
 
         except Exception as e:
             print(f"❌ Hot text rendering failed: {e}")
+            return False
+
+    def _render_hot_spot(self, parent, question_text: str, answers: list, ui_instance=None) -> bool:
+        """
+        Render hot spot questions with bounding boxes on screenshot
+
+        Args:
+            parent: Parent widget for answer display
+            question_text: The question text
+            answers: List of answer dicts
+            ui_instance: UI instance with screenshot annotation methods
+
+        Returns:
+            True if rendering succeeded, False otherwise
+        """
+        try:
+            # Extract hot spot answers
+            hot_spot_answers = []
+            for answer in answers:
+                if answer.get('content_type') == 'hot_spot' and answer.get('is_correct_option'):
+                    hot_spot_answers.append(answer)
+
+            if not hot_spot_answers:
+                print("⚠️ No hot spot answers found")
+                return False
+
+            print(f"🎯 Rendering {len(hot_spot_answers)} hot spot answers")
+
+            # Create EdmentumHotSpot component (displays text list in answer container)
+            EdmentumHotSpot(parent, question_text, hot_spot_answers)
+
+            # Trigger screenshot annotation if UI instance provided
+            if ui_instance and hasattr(ui_instance, '_annotate_screenshot_with_boxes'):
+                print("📦 Triggering screenshot annotation...")
+                annotated_path = ui_instance._annotate_screenshot_with_boxes(hot_spot_answers)
+
+                if annotated_path and hasattr(ui_instance, '_update_screenshot_from_path'):
+                    # Update screenshot display with annotated version
+                    ui_instance._update_screenshot_from_path(annotated_path)
+                    print("✅ Hot spot rendering complete with bounding boxes")
+                else:
+                    print("⚠️ Screenshot annotation failed, showing text answers only")
+
+            return True
+
+        except Exception as e:
+            print(f"❌ Hot spot rendering failed: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
     def _render_matched_pairs(self, parent, question_text: str, answers: list) -> bool:

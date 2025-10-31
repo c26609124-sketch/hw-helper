@@ -1,7 +1,20 @@
 {
-  "version": "1.0.24",
-  "release_date": "2025-10-30",
+  "version": "1.0.25",
+  "release_date": "2025-10-31",
   "changelog": [
+    {
+      "version": "1.0.25",
+      "date": "2025-10-31",
+      "changes": [
+        "NEW: Hot Spot question type support (15/15 Edmentum types complete!)",
+        "NEW: Bounding box visualization on screenshots (green Edmentum-styled boxes)",
+        "NEW: Percentage-based coordinate system for AI responses",
+        "NEW: EdmentumHotSpot component for displaying correct locations",
+        "UPDATE: Screenshots automatically annotated with green boxes for hot spot answers",
+        "UPDATE: AI prompt includes hot_spot answer schema with coordinate guidelines",
+        "COMPLETE: All 15 Edmentum technology-enhanced item types now fully supported"
+      ]
+    },
     {
       "version": "1.0.24",
       "date": "2025-10-30",
