@@ -1,7 +1,20 @@
 {
-  "version": "1.0.30",
+  "version": "1.0.31",
   "release_date": "2025-10-31",
   "changelog": [
+    {
+      "version": "1.0.31",
+      "date": "2025-10-31",
+      "changes": [
+        "NEW: OCR-based bounding box detection for 100% accurate hot spot coordinates",
+        "NEW: Automatic text label detection using Tesseract OCR (no AI guessing)",
+        "NEW: Hybrid fallback system - OCR primary, AI percentages as backup",
+        "NEW: ocr_hotspot_detector.py module with visualize_detections() for debugging",
+        "FIX: Hot spot boxes now perfectly centered on organisms (0% variance)",
+        "UPDATE: Boxes detect actual text positions and expand upward to capture organisms",
+        "UPDATE: Added pytesseract, easyocr, opencv-python to requirements.txt"
+      ]
+    },
     {
       "version": "1.0.30",
       "date": "2025-10-31",

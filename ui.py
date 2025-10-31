@@ -2005,7 +2005,7 @@ class HomeworkApp(ctk.CTk):
 
     def _annotate_screenshot_with_boxes(self, hot_spot_answers: list) -> Optional[str]:
         """
-        Draw bounding boxes on current screenshot for hot spot answers
+        Draw bounding boxes on current screenshot for hot spot answers using OCR detection
 
         Args:
             hot_spot_answers: List of answer dicts with content_type='hot_spot' and hotspot_data
@@ -2026,35 +2026,89 @@ class HomeworkApp(ctk.CTk):
             original_width, original_height = img.size
             draw = ImageDraw.Draw(img)
 
+            # Edmentum green color for bounding boxes
+            EDMENTUM_GREEN = '#2e7d32'
+            BOX_WIDTH = 4
+
+            # PHASE 1: Try OCR-based detection first (NEW in v1.0.31)
+            print(f"📦 Attempting OCR-based bounding box detection...")
+            try:
+                from ocr_hotspot_detector import detect_hotspot_locations
+
+                # Extract target organism names from AI response
+                target_labels = [ans.get('text_content', '').strip()
+                                for ans in hot_spot_answers if ans.get('text_content')]
+
+                # Use OCR to find exact locations
+                detected_boxes = detect_hotspot_locations(
+                    self.current_image_path,
+                    target_labels
+                )
+
+                # Draw boxes at OCR-detected locations
+                ocr_success_count = 0
+                for label, box in detected_boxes.items():
+                    draw.rectangle(
+                        [box['x'], box['y'],
+                         box['x'] + box['width'],
+                         box['y'] + box['height']],
+                        outline=EDMENTUM_GREEN,
+                        width=BOX_WIDTH
+                    )
+                    print(f"   ✓ Drew OCR box for '{label}' at ({box['x']}, {box['y']}) "
+                          f"with {box['confidence']}% confidence")
+                    ocr_success_count += 1
+
+                # If OCR found all labels, we're done!
+                if ocr_success_count == len(target_labels):
+                    temp_path = f"./temp_annotated_{int(time.time())}.png"
+                    img.save(temp_path, quality=95)
+                    print(f"✅ Saved OCR-annotated screenshot: {temp_path}")
+                    print(f"🎯 100% OCR detection success ({ocr_success_count}/{len(target_labels)} labels)")
+                    return temp_path
+
+                # If OCR found SOME labels, use hybrid approach
+                if ocr_success_count > 0:
+                    print(f"⚠️ OCR partial success: {ocr_success_count}/{len(target_labels)} labels detected")
+                    print(f"   Falling back to AI percentages for missing labels...")
+                    detected_labels = set(detected_boxes.keys())
+                else:
+                    print(f"⚠️ OCR detection failed (0/{len(target_labels)} labels found)")
+                    print(f"   Falling back to AI percentage-based coordinates...")
+                    detected_labels = set()
+
+            except Exception as ocr_error:
+                print(f"⚠️ OCR detection error: {ocr_error}")
+                print(f"   Falling back to AI percentage-based coordinates...")
+                detected_labels = set()
+
+            # PHASE 2: Fallback to AI percentage-based coordinates
             # Get displayed image size for coordinate scaling
-            # AI analyzes the displayed (resized) image, so we need to scale coordinates
             if hasattr(self, 'displayed_ctk_image_size') and self.displayed_ctk_image_size:
                 displayed_width, displayed_height = self.displayed_ctk_image_size
                 scale_x = original_width / displayed_width
                 scale_y = original_height / displayed_height
                 print(f"📐 Coordinate scaling: {displayed_width}x{displayed_height} → {original_width}x{original_height} (scale: {scale_x:.2f}x, {scale_y:.2f}x)")
             else:
-                # Fallback: no scaling if displayed size not available
                 scale_x = scale_y = 1.0
                 displayed_width, displayed_height = original_width, original_height
                 print(f"⚠️ No displayed size available, using original dimensions (no scaling)")
 
-            # Edmentum green color for bounding boxes
-            EDMENTUM_GREEN = '#2e7d32'
-            BOX_WIDTH = 4
-
-            print(f"📦 Drawing {len(hot_spot_answers)} bounding boxes on screenshot")
+            print(f"📦 Drawing fallback boxes for labels not detected by OCR...")
 
             for answer in hot_spot_answers:
-                hotspot_data = answer.get('hotspot_data', {})
-                text_content = answer.get('text_content', '?')
+                text_content = answer.get('text_content', '?').strip()
 
+                # Skip if already drawn by OCR
+                if text_content in detected_labels:
+                    continue
+
+                hotspot_data = answer.get('hotspot_data', {})
                 if not hotspot_data:
                     print(f"⚠️ No hotspot_data for answer: {text_content}")
                     continue
 
                 # Convert percentage coordinates to pixels
-                # AI percentages are relative to DISPLAYED image, not original
                 x_percent = hotspot_data.get('x_percent', 0)
                 y_percent = hotspot_data.get('y_percent', 0)
                 width_percent = hotspot_data.get('width_percent', 10)
@@ -2085,7 +2139,7 @@ class HomeworkApp(ctk.CTk):
                     width=BOX_WIDTH
                 )
 
-                print(f"   ✓ Drew box for '{text_content}' at ({x_percent:.1f}%, {y_percent:.1f}%) -> ({x}, {y})")
+                print(f"   ✓ Drew AI fallback box for '{text_content}' at ({x_percent:.1f}%, {y_percent:.1f}%) -> ({x}, {y})")
 
             # Save annotated image
             temp_path = f"./temp_annotated_{int(time.time())}.png"

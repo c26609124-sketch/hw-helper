@@ -3,3 +3,6 @@ Pillow==11.2.1
 protobuf==6.31.1
 selenium==4.33.0
 requests==2.32.3
+pytesseract==0.3.13
+easyocr==1.7.2
+opencv-python==4.12.0.88
