@@ -1822,9 +1822,20 @@ class HomeworkApp(ctk.CTk):
                 font = ImageFont.load_default()
                 font_bold = font
 
+            # Track rendered widgets to prevent duplication
+            rendered_widgets = set()
+
             def render_widget(w, x_offset=0, y_offset=0):
                 """Recursively render widget content to PIL image"""
                 try:
+                    # Check if widget already rendered (prevents duplication)
+                    widget_id = id(w)
+                    if widget_id in rendered_widgets:
+                        return
+
+                    # Mark as rendered
+                    rendered_widgets.add(widget_id)
+
                     # Get widget position and dimensions
                     try:
                         rel_x = w.winfo_x()

@@ -1,7 +1,16 @@
 {
-  "version": "1.0.22",
+  "version": "1.0.23",
   "release_date": "2025-10-30",
   "changelog": [
+    {
+      "version": "1.0.23",
+      "date": "2025-10-30",
+      "changes": [
+        "NEW: Authentic Brave browser logo on Launch button (detailed lion with mane spikes)",
+        "CRITICAL FIX: Screenshot duplication resolved (widget ID tracking prevents re-render)",
+        "UPDATE: Error reports now show each answer exactly once (no text overlap)"
+      ]
+    },
     {
       "version": "1.0.22",
       "date": "2025-10-30",
