@@ -1998,8 +1998,21 @@ class HomeworkApp(ctk.CTk):
 
             # Load current screenshot
             img = Image.open(self.current_image_path)
-            width, height = img.size
+            original_width, original_height = img.size
             draw = ImageDraw.Draw(img)
+
+            # Get displayed image size for coordinate scaling
+            # AI analyzes the displayed (resized) image, so we need to scale coordinates
+            if hasattr(self, 'displayed_ctk_image_size') and self.displayed_ctk_image_size:
+                displayed_width, displayed_height = self.displayed_ctk_image_size
+                scale_x = original_width / displayed_width
+                scale_y = original_height / displayed_height
+                print(f"📐 Coordinate scaling: {displayed_width}x{displayed_height} → {original_width}x{original_height} (scale: {scale_x:.2f}x, {scale_y:.2f}x)")
+            else:
+                # Fallback: no scaling if displayed size not available
+                scale_x = scale_y = 1.0
+                displayed_width, displayed_height = original_width, original_height
+                print(f"⚠️ No displayed size available, using original dimensions (no scaling)")
 
             # Edmentum green color for bounding boxes
             EDMENTUM_GREEN = '#2e7d32'
@@ -2016,21 +2029,29 @@ class HomeworkApp(ctk.CTk):
                     continue
 
                 # Convert percentage coordinates to pixels
+                # AI percentages are relative to DISPLAYED image, not original
                 x_percent = hotspot_data.get('x_percent', 0)
                 y_percent = hotspot_data.get('y_percent', 0)
                 width_percent = hotspot_data.get('width_percent', 10)
                 height_percent = hotspot_data.get('height_percent', 10)
 
-                x = int(x_percent / 100 * width)
-                y = int(y_percent / 100 * height)
-                box_width = int(width_percent / 100 * width)
-                box_height = int(height_percent / 100 * height)
+                # Calculate pixel position on displayed image, then scale to original
+                x_displayed = x_percent / 100 * displayed_width
+                y_displayed = y_percent / 100 * displayed_height
+                box_width_displayed = width_percent / 100 * displayed_width
+                box_height_displayed = height_percent / 100 * displayed_height
+
+                # Scale to original image dimensions
+                x = int(x_displayed * scale_x)
+                y = int(y_displayed * scale_y)
+                box_width = int(box_width_displayed * scale_x)
+                box_height = int(box_height_displayed * scale_y)
 
                 # Ensure box stays within image bounds
-                x = max(0, min(x, width - box_width))
-                y = max(0, min(y, height - box_height))
-                box_width = min(box_width, width - x)
-                box_height = min(box_height, height - y)
+                x = max(0, min(x, original_width - box_width))
+                y = max(0, min(y, original_height - box_height))
+                box_width = min(box_width, original_width - x)
+                box_height = min(box_height, original_height - y)
 
                 # Draw rectangle
                 draw.rectangle(
@@ -2072,12 +2093,12 @@ class HomeworkApp(ctk.CTk):
             pil_image = Image.open(image_path)
 
             # Update screenshot display (doesn't clear answers)
-            if hasattr(self, 'screenshot_label') and self.screenshot_label.winfo_exists():
+            if hasattr(self, 'screenshot_image_label') and self.screenshot_image_label.winfo_exists():
                 # Convert PIL to CTkImage for display
                 from customtkinter import CTkImage
                 ctk_image = CTkImage(light_image=pil_image, dark_image=pil_image, size=(600, 400))
-                self.screenshot_label.configure(image=ctk_image, text="")
-                self.screenshot_label.image = ctk_image  # Keep reference
+                self.screenshot_image_label.configure(image=ctk_image, text="")
+                self.screenshot_image_label.image = ctk_image  # Keep reference
                 print(f"📸 Updated screenshot display from: {os.path.basename(image_path)}")
 
             # Update current_image_path

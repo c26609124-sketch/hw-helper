@@ -1,7 +1,19 @@
 {
-  "version": "1.0.27",
+  "version": "1.0.28",
   "release_date": "2025-10-31",
   "changelog": [
+    {
+      "version": "1.0.28",
+      "date": "2025-10-31",
+      "changes": [
+        "CRITICAL FIX: Hot spot screenshots now display in UI (fixed screenshot_label bug)",
+        "CRITICAL FIX: Bounding boxes now appear at accurate locations (coordinate scaling fixed)",
+        "FIX: Screenshot display update properly references screenshot_image_label widget",
+        "FIX: Coordinate conversion accounts for displayed vs original image dimensions",
+        "UPDATE: Annotated screenshots with green boxes now visible in UI",
+        "UPDATE: Box placement matches AI analysis with proper scaling (displayed→original)"
+      ]
+    },
     {
       "version": "1.0.27",
       "date": "2025-10-31",
