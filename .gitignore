@@ -41,9 +41,10 @@ api_key.txt
 screenshots/
 saved_screenshots/
 
-# Ignore image files EXCEPT in icons/ directory
+# Ignore image files EXCEPT in icons/ and test_screenshots/ directories
 *.png
 !icons/*.png
+!test_screenshots/*.png
 *.jpg
 *.jpeg
 *.gif
