@@ -1,7 +1,20 @@
 {
-  "version": "1.0.31",
+  "version": "1.0.32",
   "release_date": "2025-10-31",
   "changelog": [
+    {
+      "version": "1.0.32",
+      "date": "2025-10-31",
+      "changes": [
+        "CRITICAL FIX: Switched from Tesseract to EasyOCR (no external dependencies)",
+        "FIX: OCR now works immediately on Windows without manual Tesseract installation",
+        "UPDATE: EasyOCR is pure Python - no PATH configuration or .exe downloads needed",
+        "UPDATE: Deep learning-based detection often more accurate than Tesseract",
+        "UPDATE: Removed cv2, numpy, pytesseract imports - simplified dependencies",
+        "UPDATE: Cross-platform compatibility improved (Windows/Mac/Linux)",
+        "NOTE: If you had Tesseract issues, this update fixes them automatically"
+      ]
+    },
     {
       "version": "1.0.31",
       "date": "2025-10-31",

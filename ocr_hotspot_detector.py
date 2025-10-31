@@ -1,20 +1,20 @@
 """
-OCR-based Hot Spot Location Detector
+OCR-based Hot Spot Location Detector (EasyOCR)
 
-This module uses Optical Character Recognition (OCR) to automatically detect
+This module uses EasyOCR (deep learning-based OCR) to automatically detect
 the exact pixel locations of organism labels in food web diagrams and other
 hot spot questions. This eliminates the need for AI estimation and provides
 100% accurate, deterministic bounding box coordinates.
 
+EasyOCR is pure Python with no external dependencies - works immediately on
+Windows/Mac/Linux without requiring Tesseract executable installation.
+
 Author: Claude Code
-Version: 1.0.31
+Version: 1.0.32
 """
 
-import cv2
-import numpy as np
 from PIL import Image
 from typing import Dict, List, Tuple, Optional
-import pytesseract
 
 
 def detect_hotspot_locations(image_path: str, target_labels: List[str],
@@ -45,43 +45,38 @@ def detect_hotspot_locations(image_path: str, target_labels: List[str],
     """
     print(f"🔍 Starting OCR detection for labels: {target_labels}")
 
-    # Load image
-    img = cv2.imread(image_path)
-    if img is None:
-        print(f"⚠️ Failed to load image: {image_path}")
-        return {}
-
-    # Convert to grayscale for better OCR accuracy
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    # Apply slight blur to reduce noise
-    gray = cv2.GaussianBlur(gray, (3, 3), 0)
-
-    # Run Tesseract OCR with bounding box detection
+    # Use EasyOCR (pure Python, no external executable dependencies)
+    # Works immediately on Windows/Mac/Linux without manual installation steps
     try:
-        ocr_data = pytesseract.image_to_data(
-            gray,
-            output_type=pytesseract.Output.DICT,
-            config='--psm 11'  # Sparse text mode for better label detection
-        )
+        import easyocr
+        # Initialize EasyOCR reader for English text
+        # gpu=False: Use CPU (more compatible, doesn't require CUDA)
+        # verbose=False: Suppress progress messages
+        reader = easyocr.Reader(['en'], gpu=False, verbose=False)
+        # Run OCR detection
+        # Returns list of (bbox, text, confidence) tuples
+        # bbox format: [[x1,y1], [x2,y2], [x3,y3], [x4,y4]] (4 corners)
+        ocr_results = reader.readtext(image_path)
+        print(f"   EasyOCR detected {len(ocr_results)} text regions")
     except Exception as e:
-        print(f"⚠️ Tesseract OCR failed: {e}")
-        print(f"   Make sure Tesseract is installed: brew install tesseract (macOS) or apt-get install tesseract-ocr (Linux)")
+        print(f"⚠️ EasyOCR initialization failed: {e}")
         return {}
 
     results = {}
     target_labels_lower = [label.lower().strip() for label in target_labels]
 
-    # Iterate through all detected text
-    for i, text in enumerate(ocr_data['text']):
+    # Process EasyOCR results
+    # Format: [(bbox, text, confidence), ...]
+    # bbox = [[x1,y1], [x2,y2], [x3,y3], [x4,y4]]
+    for bbox, text, confidence in ocr_results:
         if not text or not text.strip():
             continue
 
         text_lower = text.lower().strip()
-        confidence = int(ocr_data['conf'][i]) if ocr_data['conf'][i] != '-1' else 0
 
         # Skip low-confidence detections
-        if confidence < 30:
+        # EasyOCR uses 0.0-1.0 scale (vs Tesseract's 0-100)
+        if confidence < 0.3:
             continue
 
         # Check if this text matches any target label
@@ -89,10 +84,15 @@ def detect_hotspot_locations(image_path: str, target_labels: List[str],
             # Match if label is contained in text or text is contained in label
             # This handles partial matches like "kril" -> "krill" or "krill " -> "krill"
             if label in text_lower or text_lower in label:
-                x = ocr_data['left'][i]
-                y = ocr_data['top'][i]
-                w = ocr_data['width'][i]
-                h = ocr_data['height'][i]
+                # Extract bounding box coordinates
+                # bbox is [[x1,y1], [x2,y2], [x3,y3], [x4,y4]]
+                x_coords = [point[0] for point in bbox]
+                y_coords = [point[1] for point in bbox]
+
+                x = int(min(x_coords))
+                y = int(min(y_coords))
+                w = int(max(x_coords) - min(x_coords))
+                h = int(max(y_coords) - min(y_coords))
 
                 # Organism images are typically ABOVE the text label
                 # Expand box upward to capture the organism
@@ -104,15 +104,18 @@ def detect_hotspot_locations(image_path: str, target_labels: List[str],
                 # Store result using original label (preserve case)
                 original_label = target_labels[j]
 
+                # Convert confidence to percentage (EasyOCR returns 0.0-1.0)
+                confidence_pct = int(confidence * 100)
+
                 # If we already found this label, keep the one with higher confidence
                 if original_label in results:
-                    if confidence > results[original_label]['confidence']:
+                    if confidence_pct > results[original_label]['confidence']:
                         results[original_label] = {
                             'x': expanded_x,
                             'y': expanded_y,
                             'width': expanded_w,
                             'height': expanded_h,
-                            'confidence': confidence,
+                            'confidence': confidence_pct,
                             'original_text': text
                         }
                 else:
@@ -121,12 +124,12 @@ def detect_hotspot_locations(image_path: str, target_labels: List[str],
                         'y': expanded_y,
                         'width': expanded_w,
                         'height': expanded_h,
-                        'confidence': confidence,
+                        'confidence': confidence_pct,
                         'original_text': text
                     }
 
                 print(f"   ✓ Found '{text}' (matched '{original_label}') at ({x}, {y}) "
-                      f"with {confidence}% confidence")
+                      f"with {confidence_pct}% confidence")
                 print(f"     Expanded box: ({expanded_x}, {expanded_y}) "
                       f"{expanded_w}x{expanded_h}")
 
