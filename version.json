@@ -1,7 +1,18 @@
 {
-  "version": "1.0.23",
+  "version": "1.0.24",
   "release_date": "2025-10-30",
   "changelog": [
+    {
+      "version": "1.0.24",
+      "date": "2025-10-30",
+      "changes": [
+        "CRITICAL FIX: Final skeleton now loads correctly (fills remaining skeletons at stream end)",
+        "CRITICAL FIX: Screenshot text no longer blurry (2x resolution with LANCZOS downscaling)",
+        "FIX: CRITICAL badge now shows on 'CRITICAL FIX:' changelog items (compound badge detection)",
+        "UPDATE: Error report screenshots now crystal clear (14pt fonts scaled to 28pt)",
+        "UPDATE: Better cross-platform font support (tries Arial, Helvetica, DejaVuSans)"
+      ]
+    },
     {
       "version": "1.0.23",
       "date": "2025-10-30",

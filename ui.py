@@ -963,10 +963,24 @@ class UpdateModal(ctk.CTkToplevel):
 
     def _extract_badge_type(self, text: str) -> Tuple[Optional[str], str]:
         """Extract badge type from changelog text (e.g., 'NEW: ...' returns ('NEW', '...')"""
+        # Check for compound badges first (CRITICAL FIX, SECURITY FIX, etc.)
+        compound_badges = [
+            ("CRITICAL FIX:", "CRITICAL"),
+            ("CRITICAL UPDATE:", "CRITICAL"),
+            ("SECURITY FIX:", "SECURITY"),
+            ("SECURITY UPDATE:", "SECURITY"),
+        ]
+
+        for prefix, badge_type in compound_badges:
+            if text.startswith(prefix):
+                return badge_type, text[len(prefix):].strip()
+
+        # Check for single-word badges
         for badge_type in self.BADGE_COLORS.keys():
             prefix = f"{badge_type}: "
             if text.startswith(prefix):
                 return badge_type, text[len(prefix):]
+
         return None, text
 
     def _create_badge(self, parent, badge_type: str) -> ctk.CTkFrame:
@@ -1810,15 +1824,32 @@ class HomeworkApp(ctk.CTk):
             width = max(widget.winfo_width(), 400)  # Minimum width for readability
             height = max(widget.winfo_height(), 300)  # Minimum height
 
-            # Create blank image with dark background
-            img = Image.new('RGB', (width, height), color='#1e1e1e')
+            # Render at 2x resolution for crisp text, then scale down
+            scale = 2
+            render_width = width * scale
+            render_height = height * scale
+
+            # Create blank image with dark background at 2x resolution
+            img = Image.new('RGB', (render_width, render_height), color='#1e1e1e')
             draw = ImageDraw.Draw(img)
 
-            # Try to load a basic font, fallback to default
+            # Try to load better fonts at larger sizes (scaled up 2x)
             try:
-                font = ImageFont.truetype("arial.ttf", 11)
-                font_bold = ImageFont.truetype("arialbd.ttf", 12)
+                # Try multiple font names for cross-platform compatibility
+                font_names = ["Arial.ttf", "arial.ttf", "Helvetica.ttf", "DejaVuSans.ttf"]
+                font = None
+                for font_name in font_names:
+                    try:
+                        font = ImageFont.truetype(font_name, 14 * scale)  # 14pt at 2x = 28pt
+                        font_bold = ImageFont.truetype(font_name.replace(".ttf", "bd.ttf"), 15 * scale)
+                        break
+                    except:
+                        continue
+
+                if font is None:
+                    raise Exception("No fonts found")
             except:
+                # Fallback to default (will be blurry but functional)
                 font = ImageFont.load_default()
                 font_bold = font
 
@@ -1845,11 +1876,14 @@ class HomeworkApp(ctk.CTk):
                     except:
                         return  # Widget not rendered yet
 
-                    abs_x = x_offset + rel_x
-                    abs_y = y_offset + rel_y
+                    # Scale coordinates for high-resolution rendering
+                    abs_x = (x_offset + rel_x) * scale
+                    abs_y = (y_offset + rel_y) * scale
+                    scaled_width = w_width * scale
+                    scaled_height = w_height * scale
 
                     # Skip if outside bounds
-                    if abs_x >= width or abs_y >= height or abs_x + w_width < 0 or abs_y + w_height < 0:
+                    if abs_x >= render_width or abs_y >= render_height or abs_x + scaled_width < 0 or abs_y + scaled_height < 0:
                         return
 
                     # Render based on widget type
@@ -1874,7 +1908,8 @@ class HomeworkApp(ctk.CTk):
                                 if len(text) > 100:
                                     text = text[:97] + "..."
 
-                                draw.text((abs_x + 5, abs_y + 3), text, fill=text_color, font=font)
+                                # Scaled text position with padding
+                                draw.text((abs_x + 5*scale, abs_y + 3*scale), text, fill=text_color, font=font)
                         except:
                             pass
 
@@ -1887,9 +1922,9 @@ class HomeworkApp(ctk.CTk):
                                 if isinstance(fg_color, tuple):
                                     color = fg_color[0]
 
-                                # Draw rectangle
+                                # Draw rectangle with scaled coordinates
                                 draw.rectangle(
-                                    [abs_x, abs_y, min(abs_x + w_width, width-1), min(abs_y + w_height, height-1)],
+                                    [abs_x, abs_y, min(abs_x + scaled_width, render_width-1), min(abs_y + scaled_height, render_height-1)],
                                     fill=color
                                 )
                         except:
@@ -1909,12 +1944,16 @@ class HomeworkApp(ctk.CTk):
             # Render the entire widget tree
             render_widget(widget)
 
-            # Add watermark to indicate this is a secure render
-            draw.text((5, height - 20), "Secure Widget Render (No Screen Capture)", fill='#666666', font=font)
+            # Add watermark to indicate this is a secure render (scaled coordinates)
+            watermark_y = render_height - (20 * scale)
+            draw.text((5*scale, watermark_y), "Secure Widget Render (No Screen Capture)", fill='#666666', font=font)
+
+            # Downscale to original size for crisp antialiased text
+            img = img.resize((width, height), Image.LANCZOS)
 
             # Save to temp file
             temp_path = f"./temp_answer_display_{int(time.time())}.png"
-            img.save(temp_path)
+            img.save(temp_path, quality=95, optimize=True)
             return temp_path
 
         except Exception as e:
@@ -4273,6 +4312,17 @@ If any part of the question or an answer involves a numeric value that you canno
 
         # Process response
         processed_data = self._process_ai_response_data(raw_response_data)
+
+        # CRITICAL FIX: Replace any remaining skeletons with final data
+        # This handles cases where the last answer didn't stream in time
+        if hasattr(self, 'skeleton_frames') and self.skeleton_frames:
+            answers_list = processed_data.get('answers', [])
+            for answer in answers_list:
+                answer_id = answer.get('answer_id', '')
+                if answer_id and answer_id in self.skeleton_frames:
+                    # This skeleton was never replaced during streaming
+                    print(f"   🔄 Filling remaining skeleton: {answer_id}")
+                    self._replace_skeleton_with_answer(answer_id, answer)
 
         # VALIDATION: Validate and auto-fix response before rendering
         if RESPONSE_VALIDATOR_AVAILABLE:
