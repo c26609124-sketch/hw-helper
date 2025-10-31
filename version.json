@@ -1,7 +1,19 @@
 {
-  "version": "1.0.28",
+  "version": "1.0.29",
   "release_date": "2025-10-31",
   "changelog": [
+    {
+      "version": "1.0.29",
+      "date": "2025-10-31",
+      "changes": [
+        "CRITICAL FIX: Error reports now capture full scrollable answer content (not just viewport)",
+        "FIX: Canvas bbox(all) used to get complete content height instead of viewport height",
+        "FIX: Removed Y-axis bounds check to render all widgets including scrolled content",
+        "NEW: Debug logging shows viewport vs full content dimensions in error reports",
+        "UPDATE: Error report screenshots now include all answers regardless of scroll position",
+        "UPDATE: Developers receive complete answer context for better debugging"
+      ]
+    },
     {
       "version": "1.0.28",
       "date": "2025-10-31",

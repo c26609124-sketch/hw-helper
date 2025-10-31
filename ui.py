@@ -1840,7 +1840,31 @@ class HomeworkApp(ctk.CTk):
 
             # Get widget dimensions
             width = max(widget.winfo_width(), 400)  # Minimum width for readability
-            height = max(widget.winfo_height(), 300)  # Minimum height
+
+            # Get FULL scrollable content height (not just viewport)
+            if hasattr(widget, '_parent_canvas'):
+                canvas = widget._parent_canvas
+                canvas.update_idletasks()
+                bbox = canvas.bbox("all")
+                if bbox and len(bbox) == 4:
+                    # bbox = (x1, y1, x2, y2) - get full content height
+                    full_height = max(bbox[3] - bbox[1], 300)
+                    viewport_height = widget.winfo_height()
+                    print(f"📸 Capturing answer display:")
+                    print(f"   Viewport: {width}x{viewport_height}px")
+                    print(f"   Full content: {width}x{full_height}px")
+                    if hasattr(canvas, 'cget'):
+                        scrollregion = canvas.cget('scrollregion')
+                        print(f"   Canvas scrollregion: {scrollregion}")
+                else:
+                    full_height = widget.winfo_height()
+                    print(f"📸 Capturing answer display: {width}x{full_height}px (no bbox)")
+            else:
+                # Fallback to visible height
+                full_height = widget.winfo_height()
+                print(f"📸 Capturing answer display: {width}x{full_height}px (no canvas)")
+
+            height = max(full_height, 300)  # Minimum height
 
             # Render at 2x resolution for crisp text, then scale down
             scale = 2
@@ -1900,9 +1924,10 @@ class HomeworkApp(ctk.CTk):
                     scaled_width = w_width * scale
                     scaled_height = w_height * scale
 
-                    # Skip if outside bounds
-                    if abs_x >= render_width or abs_y >= render_height or abs_x + scaled_width < 0 or abs_y + scaled_height < 0:
-                        return
+                    # Skip if outside bounds (only check X-axis to allow scrolled Y content)
+                    # Removed Y-axis check to capture full scrollable content including scrolled widgets
+                    if abs_x >= render_width or abs_x + scaled_width < 0:
+                        return  # Only skip if completely off-screen horizontally
 
                     # Render based on widget type
                     widget_class = w.__class__.__name__
