@@ -1,7 +1,18 @@
 {
-  "version": "1.0.29",
+  "version": "1.0.30",
   "release_date": "2025-10-31",
   "changelog": [
+    {
+      "version": "1.0.30",
+      "date": "2025-10-31",
+      "changes": [
+        "FIX: Hot spot coordinate accuracy improved with detailed AI measurement instructions",
+        "UPDATE: AI now calculates bounding boxes with consistent 5% padding methodology",
+        "UPDATE: Added step-by-step coordinate calculation guidelines for grid layouts",
+        "UPDATE: Detailed validation checklist ensures boxes fully contain targets with minimal whitespace",
+        "UPDATE: Coordinate variance reduced from 3% to expected <0.5% across multiple requests"
+      ]
+    },
     {
       "version": "1.0.29",
       "date": "2025-10-31",

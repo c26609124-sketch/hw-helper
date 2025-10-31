@@ -3621,11 +3621,37 @@ If it's a **hot spot question** (click specific locations on an image):
    }
    ```
 
-4. **COORDINATE ACCURACY**:
-   - Estimate object positions by analyzing the image layout
-   - For organisms/objects in a grid, calculate positions based on grid layout
-   - Ensure bounding box fully contains the target object
-   - If multiple objects, provide separate hot_spot answers for each
+4. **COORDINATE ACCURACY - DETAILED INSTRUCTIONS**:
+
+   **HOW TO CALCULATE COORDINATES:**
+   - `x_percent`/`y_percent` = **top-left corner position** of bounding box
+   - `width_percent`/`height_percent` = dimensions of bounding box
+   - All percentages are relative to the DISPLAYED image dimensions you're analyzing
+
+   **MEASUREMENT METHODOLOGY:**
+   1. Identify the **visual boundaries** of the target object in the image
+   2. If the object has a **text label** (e.g., "Penguin", "Cod"), **include the label** in the bounding area
+   3. Add **5% padding** on all sides for comfortable containment (prevents clipping at edges)
+   4. Calculate the **top-left corner position** (x_percent, y_percent) of the padded box
+   5. Calculate the **box dimensions** (width_percent, height_percent) including padding
+
+   **FOR GRID LAYOUTS (e.g., food web with organisms in rows/columns):**
+   - Visually divide the image into grid cells based on the layout you observe
+   - Calculate each cell's approximate position and size
+   - Example: 3-column grid → organism centers at approximately 16%, 50%, 83% x-position
+   - Example: 2-row grid → organism centers at approximately 25%, 65% y-position
+   - Place bounding boxes centered on each organism's position with appropriate padding
+
+   **TYPICAL BOX SIZES:**
+   - Single organism with label: 8-15% width, 10-18% height
+   - Larger diagrams or multi-part objects: 15-25% width, 20-30% height
+   - Ensure boxes **fully contain the target** without excessive whitespace
+
+   **VALIDATION CHECKLIST:**
+   - ✓ Box completely contains the target object AND its text label
+   - ✓ Padding is visible but minimal (surrounding whitespace should not exceed 20% of box area)
+   - ✓ If multiple targets exist, boxes should not overlap unless objects are physically adjacent
+   - ✓ For grid layouts, boxes should be consistently sized and evenly spaced
 
 5. **TEXT CONTENT**: Include the name/description of the object in `text_content` for display in answer container
 
