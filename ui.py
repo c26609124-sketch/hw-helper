@@ -149,15 +149,15 @@ class IconManager:
 
     # Icon file mappings (emoji -> filename)
     ICON_FILES = {
-        '🎉': 'success.png', '✅': 'success.png', '🧹': 'success.png',
+        '🎉': 'success.png', '✅': 'success.png', '🧹': 'success.png', '✨': 'sparkles.png',
         '❌': 'error.png', '🚨': 'error.png',
         '⚠️': 'warning.png',
         '🔍': 'info.png', '📝': 'info.png', '📋': 'info.png', '🎨': 'info.png', '🔧': 'info.png',
         '⚡': 'progress.png', '🚀': 'progress.png', '🔄': 'progress.png', '⏳': 'progress.png',
         '💾': 'progress.png', '⬇️': 'progress.png',
         '🤖': 'ai.png', '💡': 'ai.png', '📜': 'ai.png',
-        '📁': 'file.png', '📸': 'camera.png',
-        '🌐': 'network.png', '🖼️': 'file.png', '📊': 'info.png', '✨': 'success.png',
+        '📁': 'file.png', '📸': 'camera.png', '🖼️': 'file.png',
+        '🌐': 'network.png', '📊': 'chart.png',
     }
 
     _cache = {}  # CTkImage cache
@@ -283,7 +283,7 @@ class ErrorReporter:
         return filepath
 
 
-def send_error_to_discord(report_data: dict, screenshot_path: str = None) -> bool:
+def send_error_to_discord(report_data: dict, screenshot_path: str = None, answer_display_path: str = None) -> bool:
     """Send error report to Discord webhook automatically"""
     try:
         # Create Discord embed with error summary
@@ -314,14 +314,29 @@ def send_error_to_discord(report_data: dict, screenshot_path: str = None) -> boo
         response = requests.post(DISCORD_ERROR_WEBHOOK, files=files, timeout=10)
         response.raise_for_status()
 
-        # Upload screenshot if available
+        # Upload question screenshot if available
         if screenshot_path and os.path.exists(screenshot_path):
             try:
                 with open(screenshot_path, 'rb') as f:
-                    screenshot_files = {"file": (os.path.basename(screenshot_path), f)}
+                    screenshot_files = {"file": ("question_screenshot.png", f)}
                     requests.post(DISCORD_ERROR_WEBHOOK, files=screenshot_files, timeout=15)
             except Exception as e:
-                print(f"⚠️ Could not upload screenshot: {e}")
+                print(f"⚠️ Could not upload question screenshot: {e}")
+
+        # Upload answer display screenshot if available
+        if answer_display_path and os.path.exists(answer_display_path):
+            try:
+                with open(answer_display_path, 'rb') as f:
+                    answer_files = {"file": ("answer_display.png", f)}
+                    requests.post(DISCORD_ERROR_WEBHOOK, files=answer_files, timeout=15)
+            except Exception as e:
+                print(f"⚠️ Could not upload answer display: {e}")
+            finally:
+                # Clean up temp file
+                try:
+                    os.remove(answer_display_path)
+                except:
+                    pass
 
         return True
     except Exception as e:
@@ -523,7 +538,8 @@ class SegmentedControl(ctk.CTkFrame):
                 "corner_radius": corner_radius if isinstance(corner_radius, int) else 8,
                 "border_width": 1,
                 "border_color": ("gray70", "gray30"),
-                "state": button_config.get("state", "normal")
+                "state": button_config.get("state", "normal"),
+                "text_color_disabled": button_config.get("text_color_disabled", ("gray74", "gray60"))
             }
 
             # Add icon if provided
@@ -907,6 +923,14 @@ class UpdateModal(ctk.CTkToplevel):
         self.emoji_font = "Segoe UI Emoji" if platform.system() == "Windows" else "Apple Color Emoji"
         self.default_font = "Segoe UI" if platform.system() == "Windows" else "Arial"
 
+        # Load icons for UpdateModal
+        self.celebration_icon = IconManager.load_icon('celebration.png')
+        self.clipboard_icon = IconManager.load_icon('clipboard.png')
+        self.download_icon = IconManager.load_icon('download.png')
+        self.restart_icon = IconManager.load_icon('restart.png')
+        self.success_icon = IconManager.load_icon('success.png')
+        self.error_icon = IconManager.load_icon('error.png')
+
         # Configure window
         self.title("Update Available")
         self.geometry("600x520")
@@ -962,10 +986,20 @@ class UpdateModal(ctk.CTkToplevel):
         header_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
         header_frame.pack(fill="x", pady=(0, 15))
 
+        # Icon
+        if self.celebration_icon:
+            icon_label = ctk.CTkLabel(
+                header_frame,
+                image=self.celebration_icon,
+                text=""
+            )
+            icon_label.pack(side="left", padx=(0, 8))
+
+        # Title text
         title_label = ctk.CTkLabel(
             header_frame,
-            text=f"🎉 Update Available: v{self.version}",
-            font=(self.emoji_font, 20, "bold"),
+            text=f"Update Available: v{self.version}",
+            font=(self.default_font, 20, "bold"),
             text_color="#1a73e8"
         )
         title_label.pack(side="left")
@@ -974,13 +1008,25 @@ class UpdateModal(ctk.CTkToplevel):
         changelog_frame = ctk.CTkFrame(main_frame, fg_color="#2b2b2b", corner_radius=10)
         changelog_frame.pack(fill="both", expand=True, pady=(0, 15))
 
+        # Changelog header with icon
+        changelog_header = ctk.CTkFrame(changelog_frame, fg_color="transparent")
+        changelog_header.pack(fill="x", padx=15, pady=(15, 10))
+
+        if self.clipboard_icon:
+            icon_label = ctk.CTkLabel(
+                changelog_header,
+                image=self.clipboard_icon,
+                text=""
+            )
+            icon_label.pack(side="left", padx=(0, 6))
+
         changelog_title = ctk.CTkLabel(
-            changelog_frame,
-            text="📋 What's New:",
-            font=(self.emoji_font, 14, "bold"),
+            changelog_header,
+            text="What's New:",
+            font=(self.default_font, 14, "bold"),
             anchor="w"
         )
-        changelog_title.pack(fill="x", padx=15, pady=(15, 10))
+        changelog_title.pack(side="left")
 
         # Scrollable changelog container
         changelog_scroll = ctk.CTkScrollableFrame(
@@ -1018,14 +1064,26 @@ class UpdateModal(ctk.CTkToplevel):
         progress_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
         progress_frame.pack(fill="x", pady=(0, 15))
 
+        # Status container with icon
+        self.status_container = ctk.CTkFrame(progress_frame, fg_color="transparent")
+        self.status_container.pack(fill="x", pady=(0, 5))
+
+        # Status icon
+        self.status_icon_label = ctk.CTkLabel(
+            self.status_container,
+            image=self.download_icon if self.download_icon else None,
+            text=""
+        )
+        self.status_icon_label.pack(side="left", padx=(0, 6))
+
         # Status label
         self.status_label = ctk.CTkLabel(
-            progress_frame,
-            text="⬇️ Preparing to download...",
-            font=(self.emoji_font, 12),
+            self.status_container,
+            text="Preparing to download...",
+            font=(self.default_font, 12),
             anchor="w"
         )
-        self.status_label.pack(fill="x", pady=(0, 5))
+        self.status_label.pack(side="left", fill="x", expand=True)
 
         # Progress bar
         self.progress_bar = ctk.CTkProgressBar(
@@ -1066,21 +1124,27 @@ class UpdateModal(ctk.CTkToplevel):
         # Restart button (right side) - initially disabled
         self.restart_button = ctk.CTkButton(
             button_frame,
-            text="🔄 Restart Now",
+            text="Restart Now",
+            image=self.restart_icon if self.restart_icon else None,
+            compound="left",
             command=self.restart_application,
             width=150,
             height=35,
             fg_color="#1a73e8",
             hover_color="#1557b0",
             state="disabled",
-            font=(self.emoji_font, 12)
+            font=(self.default_font, 12)
         )
         self.restart_button.pack(side="right")
 
     def update_progress(self, current: int, total: int, filename: str, percentage: int):
         """Update progress bar and status label (thread-safe)"""
         def _update():
-            self.status_label.configure(text=f"⬇️ Downloading: {filename} ({current}/{total})")
+            # Update icon to download icon
+            if self.download_icon:
+                self.status_icon_label.configure(image=self.download_icon)
+            # Update text
+            self.status_label.configure(text=f"Downloading: {filename} ({current}/{total})")
             self.progress_bar.set(percentage / 100.0)
             self.progress_label.configure(text=f"{percentage}%")
 
@@ -1091,7 +1155,11 @@ class UpdateModal(ctk.CTkToplevel):
         """Mark update as complete and enable restart button"""
         def _complete():
             self.update_complete = True
-            self.status_label.configure(text="✅ Update installed successfully!")
+            # Update icon to success icon
+            if self.success_icon:
+                self.status_icon_label.configure(image=self.success_icon)
+            # Update text
+            self.status_label.configure(text="Update installed successfully!")
             self.progress_bar.set(1.0)
             self.progress_label.configure(text="100%")
             self.restart_button.configure(state="normal")
@@ -1102,7 +1170,11 @@ class UpdateModal(ctk.CTkToplevel):
     def mark_failed(self, error_msg: str = "Update failed"):
         """Mark update as failed"""
         def _failed():
-            self.status_label.configure(text=f"❌ {error_msg}")
+            # Update icon to error icon
+            if self.error_icon:
+                self.status_icon_label.configure(image=self.error_icon)
+            # Update text
+            self.status_label.configure(text=error_msg)
             self.cancel_button.configure(text="Close")
 
         self.after(0, _failed)
@@ -1159,6 +1231,11 @@ class HomeworkApp(ctk.CTk):
         self.button_capture_icon = IconManager.load_button_icon('button-capture.png', size=(20, 20))
         self.button_answer_icon = IconManager.load_button_icon('button-answer.png', size=(20, 20))
 
+        # Load button icons for utility buttons
+        self.brave_icon = IconManager.load_button_icon('brave.png', size=(20, 20))
+        self.folder_icon = IconManager.load_button_icon('folder.png', size=(20, 20))
+        self.warning_icon = IconManager.load_button_icon('warning.png', size=(20, 20))
+
         # Create left panel
         self.left_panel = ctk.CTkFrame(self, corner_radius=0)
         self.left_panel.grid(row=0, column=0, sticky="nsew", padx=(10,5), pady=10)
@@ -1176,14 +1253,16 @@ class HomeworkApp(ctk.CTk):
                 "icon": self.button_capture_icon,
                 "command": self.start_capture_thread,
                 "color": "#3498DB",  # Blue
-                "state": "normal"
+                "state": "normal",
+                "text_color_disabled": "white"
             },
             {
                 "text": "Get AI Answer",
                 "icon": self.button_answer_icon,
                 "command": self.start_ai_thread,
                 "color": "#2ECC71",  # Green
-                "state": "disabled"
+                "state": "disabled",
+                "text_color_disabled": "white"  # Keep text white when disabled
             }
         ]
 
@@ -1210,6 +1289,8 @@ class HomeworkApp(ctk.CTk):
         self.launch_brave_button = ctk.CTkButton(
             utility_frame,
             text="Launch Brave",
+            image=self.brave_icon,
+            compound="left",
             command=self.launch_brave_with_debugging,
             height=utility_height,
             font=utility_font,
@@ -1222,6 +1303,8 @@ class HomeworkApp(ctk.CTk):
         self.load_screenshot_button = ctk.CTkButton(
             utility_frame,
             text="Load Screenshot",
+            image=self.folder_icon,
+            compound="left",
             command=self.load_saved_screenshot,
             height=utility_height,
             font=utility_font,
@@ -1235,6 +1318,8 @@ class HomeworkApp(ctk.CTk):
         self.report_error_button = ctk.CTkButton(
             utility_frame,
             text="Report Error",
+            image=self.warning_icon,
+            compound="left",
             command=self.create_error_report,
             height=utility_height,
             font=utility_font,
@@ -1659,49 +1744,55 @@ class HomeworkApp(ctk.CTk):
             self._update_screenshot_display(None, error_msg)
             self.current_image_path = None
 
-    def create_error_report(self):
-        """Generate and save error report"""
+    def _capture_answer_display(self) -> Optional[str]:
+        """Capture answer display area as PNG for error reporting"""
         try:
-            print("🔧 Generating error report...")
+            # Get answer scroll frame widget
+            widget = self.answer_scroll_frame
+
+            # Update widget to ensure rendering complete
+            widget.update_idletasks()
+
+            # Get widget dimensions
+            x = widget.winfo_rootx()
+            y = widget.winfo_rooty()
+            width = widget.winfo_width()
+            height = widget.winfo_height()
+
+            # Capture screenshot using PIL/ImageGrab
+            import PIL.ImageGrab
+            screenshot = PIL.ImageGrab.grab(bbox=(x, y, x + width, y + height))
+
+            # Save to temp file
+            temp_path = f"./temp_answer_display_{int(time.time())}.png"
+            screenshot.save(temp_path)
+            return temp_path
+        except Exception as e:
+            print(f"⚠️ Could not capture answer display: {e}")
+            return None
+
+    def create_error_report(self):
+        """Generate and send error report automatically"""
+        try:
+            print("📤 Sending error report to developer...")
 
             # Create report
             report = ErrorReporter.create_report(self)
 
-            # Save to file
-            filepath = ErrorReporter.save_report(report)
+            # Capture answer display as PNG
+            answer_screenshot_path = self._capture_answer_display()
 
-            # Copy to clipboard
-            report_text = json.dumps(report, indent=2, default=str)
-            self.clipboard_clear()
-            self.clipboard_append(report_text)
-
-            # Show success message
-            print(f"✅ Error report saved: {filepath}")
-            print("✅ Report copied to clipboard!")
-
-            # NEW: Send to Discord automatically
+            # Send to Discord (screenshot + answer_display_screenshot)
             screenshot_path = self.current_image_path if hasattr(self, 'current_image_path') else None
-            print("📤 Sending error report to developer...")
-            success = send_error_to_discord(report, screenshot_path)
+            success = send_error_to_discord(report, screenshot_path, answer_screenshot_path)
 
             if success:
-                print("✅ Error report sent to developer automatically!")
-                print("💡 You're all set - the developer has been notified!")
+                print("✅ Error report sent automatically!")
             else:
-                print("⚠️ Could not send report automatically")
-                print("💡 Please share the saved file or clipboard contents")
-
-            # Open file location (optional)
-            try:
-                if sys.platform == "win32":
-                    os.startfile(os.path.dirname(os.path.abspath(filepath)))
-                elif sys.platform == "darwin":
-                    subprocess.run(["open", os.path.dirname(os.path.abspath(filepath))])
-            except:
-                pass
+                print("❌ Could not send report - check network connection")
 
         except Exception as e:
-            print(f"[✗] Failed to create error report: {e}")
+            print(f"❌ Error reporting failed: {e}")
             import traceback
             traceback.print_exc()
 
@@ -2579,7 +2670,6 @@ class HomeworkApp(ctk.CTk):
         # Initialize progressive parser
         if PROGRESSIVE_PARSER_AVAILABLE:
             self.progressive_parser = ProgressiveJSONParser()
-            print("🔄 Progressive parser initialized")
         
         # Create main streaming container (formatted elements will appear here)
         self.streaming_container = ctk.CTkFrame(self.answer_scroll_frame, fg_color="transparent")
@@ -2605,7 +2695,6 @@ class HomeworkApp(ctk.CTk):
         if hasattr(self, 'analysis_displayed'):
             delattr(self, 'analysis_displayed')
 
-        print("📺 Progressive display initialized")
         
         base_prompt = """You are a helpful homework assistant. Analyze the question in the provided image.
 Structure your response strictly according to the provided JSON schema.
@@ -3094,12 +3183,11 @@ If any part of the question or an answer involves a numeric value that you canno
                 options_str_list = [f"'{opt.get('text','N/A')}' (value: '{opt.get('value','N/A')}')" for opt in dropdown.get('options', [])]; options_str = ", ".join(options_str_list)
                 dropdown_info_text += f"- ID '{dropdown.get('id', 'Unknown Dropdown')}': [{options_str}]\n"
             final_prompt += dropdown_info_text; print(f"📋 Appending {len(self.current_dropdown_data)} dropdown(s) to prompt")
-        else: print("ℹ️ No dropdown data to append to prompt.")
         threading.Thread(target=self._call_ai_api_thread_target, args=(api_key, selected_model, self.current_image_path, final_prompt),daemon=True).start()
 
     def _call_ai_api_thread_target(self, api_key, model_name, image_path, prompt):
         start_time = time.time()
-        print(f"🚀 Starting streaming API call: {model_name}")
+        print(f"🤖 Starting AI analysis...")
         
         # Pre-encode image with cache validation
         # CRITICAL: Validate cache is for the CORRECT image to prevent answer contamination
@@ -3113,8 +3201,7 @@ If any part of the question or an answer involves a numeric value that you canno
             with open(image_path, "rb") as f:
                 self.current_image_base64 = base64.b64encode(f.read()).decode('utf-8')
             self.current_image_base64_path = image_path  # Track which image this cache is for
-            print(f"   ✓ Encoding completed in {(time.time() - encode_start)*1000:.0f}ms")
-        
+
         self.streaming_active = True
         self.accumulated_response = ""
         first_render_time = None
@@ -3446,10 +3533,9 @@ If any part of the question or an answer involves a numeric value that you canno
 
         answer_structure = metadata.get("answer_structure", [])
         if not answer_structure:
-            print("⚠️ No answer_structure in metadata, skipping skeleton creation")
             return
 
-        print(f"🎨 Creating {len(answer_structure)} Edmentum-styled skeleton placeholders (strategy: {strategy})...")
+        print(f"🎨 Creating {len(answer_structure)} skeleton placeholders...")
 
         # Create skeletons based on rendering strategy
         if strategy == 'edmentum_multiple_choice':
@@ -3476,15 +3562,12 @@ If any part of the question or an answer involves a numeric value that you canno
 
         else:
             # Fallback: Use generic skeletons for unknown strategies
-            print(f"   Using generic skeletons for strategy: {strategy}")
             for answer_spec in answer_structure:
                 answer_type = answer_spec.get("type", "generic")
                 answer_id = answer_spec.get("id", f"skeleton_{len(self.skeleton_frames)}")
                 label = answer_spec.get("label", "")
                 skeleton = self._create_skeleton_for_type(answer_type, answer_id, label)
                 self.skeleton_frames[answer_id] = skeleton
-
-        print(f"✓ {len(self.skeleton_frames)} Edmentum-styled skeletons created")
 
     def _render_progressive_content(self, new_data: Dict):
         """Render newly complete JSON objects as formatted UI elements (PHASE 2)"""
@@ -3519,10 +3602,25 @@ If any part of the question or an answer involves a numeric value that you canno
                     try:
                         answer_id = answer.get("answer_id", "")
 
+                        # Normalize ID format (match_pair_X == matching_pair_X)
+                        # Some AI models use "match_pair" while skeletons use "matching_pair"
+                        actual_skeleton_id = answer_id
+                        if answer_id and answer_id not in self.skeleton_frames:
+                            # Try common variations
+                            variations = [
+                                answer_id.replace("match_pair", "matching_pair"),
+                                answer_id.replace("matching_pair", "match_pair"),
+                                answer_id.replace("mc_option", "multiple_choice"),
+                                answer_id.replace("multiple_choice", "mc_option")
+                            ]
+                            for variant in variations:
+                                if variant in self.skeleton_frames:
+                                    actual_skeleton_id = variant
+                                    break
+
                         # Check if we have a skeleton for this answer
-                        if answer_id and answer_id in self.skeleton_frames:
-                            print(f"   🔄 Replacing skeleton for: {answer_id}")
-                            self._replace_skeleton_with_answer(answer_id, answer)
+                        if actual_skeleton_id and actual_skeleton_id in self.skeleton_frames:
+                            self._replace_skeleton_with_answer(actual_skeleton_id, answer)
                         else:
                             # No skeleton exists, render normally (fallback mode)
                             print(f"   ➕ No skeleton for {answer_id}, rendering directly")

@@ -51,6 +51,21 @@ This directory contains reference screenshots for testing all 15 Edmentum techno
 - All questions should use Edmentum color scheme (green for correct, blue accents)
 - Report any rendering issues using the "Report Error" button
 
+## ⚠️ Important Note
+
+**This directory is intentionally empty in the repository.**
+
+You must provide your own Edmentum screenshots for testing, as these contain copyrighted educational content that cannot be included in the repository.
+
+### How to Capture Test Screenshots:
+1. Navigate to an Edmentum question of the desired type
+2. Press `Win+Shift+S` (Windows) or `Cmd+Shift+4` (Mac)
+3. Capture the full question area including all options/elements
+4. Save with the corresponding filename from the list above
+5. Place in this `test_screenshots` directory
+
+Once you have screenshots, use the "Load Screenshot" button in the app to test each question type.
+
 ---
 
-Last Updated: 2025-10-30 | v1.0.18
+Last Updated: 2025-10-30 | v1.0.19

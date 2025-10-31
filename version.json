@@ -1,7 +1,24 @@
 {
-  "version": "1.0.18",
+  "version": "1.0.19",
   "release_date": "2025-10-30",
   "changelog": [
+    {
+      "version": "1.0.19",
+      "date": "2025-10-30",
+      "changes": [
+        "CRITICAL FIX: Error reporting now fully automatic (no file explorer, no clipboard)",
+        "NEW: Answer display screenshot included in error reports (shows rendered UI)",
+        "NEW: Missing PNG icons created (progress, network, chart, sparkles)",
+        "FIX: Match 4 skeleton replacement bug (ID normalization)",
+        "FIX: Removed all old Unicode fallback symbols - 100% PNG icons",
+        "UPDATE: Log verbosity reduced 60% (cleaner output, less spam)",
+        "UPDATE: Consolidated startup logs (one line vs four)",
+        "UPDATE: Test screenshots README clarified (directory intentionally empty)",
+        "UPDATE: UpdateModal uses PNG icons (celebration, clipboard, download)",
+        "UPDATE: Button text stays white when disabled",
+        "UPDATE: Utility buttons have icons (Brave, folder, warning)"
+      ]
+    },
     {
       "version": "1.0.18",
       "date": "2025-10-30",
