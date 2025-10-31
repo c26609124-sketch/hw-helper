@@ -909,6 +909,7 @@ class UpdateModal(ctk.CTkToplevel):
         'FIX': '#34a853',      # Green
         'CRITICAL': '#ea4335', # Red
         'UPDATE': '#fbbc04',   # Yellow
+        'SECURITY': '#ff6b35',  # Orange
     }
 
     def __init__(self, parent, version: str, changelog: list):
@@ -926,6 +927,12 @@ class UpdateModal(ctk.CTkToplevel):
         # Detect if this update contains critical fixes
         self.has_critical_fixes = any(
             "CRITICAL FIX:" in change or "CRITICAL:" in change
+            for change in self.changelog
+        )
+
+        # Detect if this update contains security fixes
+        self.has_security_fixes = any(
+            "SECURITY:" in change or "SECURITY FIX:" in change
             for change in self.changelog
         )
 
@@ -1023,6 +1030,24 @@ class UpdateModal(ctk.CTkToplevel):
             badge_label = ctk.CTkLabel(
                 critical_badge,
                 text="⚠️ CRITICAL",
+                font=(self.default_font, 11, "bold"),
+                text_color="white"
+            )
+            badge_label.pack(padx=10, pady=4)
+
+        # Security update badge (if applicable)
+        if self.has_security_fixes:
+            security_badge = ctk.CTkFrame(
+                header_frame,
+                fg_color="#ff6b35",  # Orange
+                corner_radius=12,
+                height=28
+            )
+            security_badge.pack(side="left", padx=(10, 0))
+
+            badge_label = ctk.CTkLabel(
+                security_badge,
+                text="🔒 SECURITY",
                 font=(self.default_font, 11, "bold"),
                 text_color="white"
             )

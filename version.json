@@ -1,7 +1,16 @@
 {
-  "version": "1.0.20",
+  "version": "1.0.21",
   "release_date": "2025-10-30",
   "changelog": [
+    {
+      "version": "1.0.21",
+      "date": "2025-10-30",
+      "changes": [
+        "NEW: SECURITY badge in update modal (orange 🔒 badge for security updates)",
+        "UPDATE: Badge system now supports 5 types (NEW, FIX, CRITICAL, UPDATE, SECURITY)",
+        "UPDATE: Security-related changes now prominently highlighted in header"
+      ]
+    },
     {
       "version": "1.0.20",
       "date": "2025-10-30",
