@@ -1,7 +1,30 @@
 {
-  "version": "1.0.25",
+  "version": "1.0.27",
   "release_date": "2025-10-31",
   "changelog": [
+    {
+      "version": "1.0.27",
+      "date": "2025-10-31",
+      "changes": [
+        "CRITICAL FIX: Hot spot bounding boxes now render on screenshots (AI instructed correctly)",
+        "FIX: Added 'edmentum_hot_spot' to rendering_strategy options in AI prompt",
+        "NEW: Hot Spot example added to INITIAL_ANALYSIS EXAMPLES for AI guidance",
+        "UPDATE: AI now returns correct rendering_strategy for hot_spot questions",
+        "UPDATE: Screenshot annotation with green bounding boxes now triggers automatically"
+      ]
+    },
+    {
+      "version": "1.0.26",
+      "date": "2025-10-31",
+      "changes": [
+        "FIX: Hot spot borders now display correctly (added missing bg_info and blue_border colors)",
+        "NEW: COMPLETE badge in update modal (purple badge for completion updates)",
+        "NEW: Screenshot capture cancellation (cancel button appears during capture)",
+        "NEW: Official Brave browser favicon replaces custom icon (authentic branding)",
+        "UPDATE: Cancel button dynamically shows/hides during screenshot operations",
+        "UPDATE: Brave icon downloaded from brave.com and resized to 20x20px"
+      ]
+    },
     {
       "version": "1.0.25",
       "date": "2025-10-31",

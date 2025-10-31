@@ -910,6 +910,7 @@ class UpdateModal(ctk.CTkToplevel):
         'CRITICAL': '#ea4335', # Red
         'UPDATE': '#fbbc04',   # Yellow
         'SECURITY': '#ff6b35',  # Orange
+        'COMPLETE': '#9c27b0',  # Purple
     }
 
     def __init__(self, parent, version: str, changelog: list):
@@ -1290,6 +1291,10 @@ class HomeworkApp(ctk.CTk):
         self.streaming_active = False
         self.accumulated_response = ""
 
+        # Capture thread management
+        self.capture_thread = None
+        self.capture_cancelled = threading.Event()
+
         # Load button icons for workflow buttons
         self.button_capture_icon = IconManager.load_button_icon('button-capture.png', size=(20, 20))
         self.button_answer_icon = IconManager.load_button_icon('button-answer.png', size=(20, 20))
@@ -1376,6 +1381,19 @@ class HomeworkApp(ctk.CTk):
             hover_color=("#357ABD", "#1F4788")
         )
         self.load_screenshot_button.grid(row=0, column=1, padx=(5, 0), pady=0, sticky="ew")
+
+        # Cancel Capture button (hidden by default, shown during capture)
+        self.cancel_capture_button = ctk.CTkButton(
+            utility_frame,
+            text="✖ Cancel Capture",
+            command=self.cancel_capture,
+            height=utility_height,
+            font=utility_font,
+            corner_radius=6,
+            fg_color="#FF6B6B",
+            hover_color="#EE5A5A"
+        )
+        # Hidden by default - will be shown/hidden dynamically
 
         # Report Error button (for debugging)
         self.report_error_button = ctk.CTkButton(
@@ -2243,15 +2261,49 @@ class HomeworkApp(ctk.CTk):
         except Exception as e: print(f"Error re-crop/display: {e}"); traceback.print_exc(); self._update_answer_textbox(f"Error during re-crop: {e}",False)
 
     def start_capture_thread(self):
+        # Clear cancellation flag
+        self.capture_cancelled.clear()
+
+        # Show cancel button
+        self.cancel_capture_button.grid(row=1, column=0, columnspan=2, padx=0, pady=(5, 0), sticky="ew")
+        self.report_error_button.grid(row=2, column=0, columnspan=2, padx=0, pady=(5, 0), sticky="ew")
+
         self.capture_button.configure(state="disabled", text="Capturing..."); self._update_screenshot_display(None)
         self.progress_dots.set_step(0)  # Reset to step 1
         self.current_dropdown_data = []; self._clear_answers(); self._update_answer_textbox("Waiting for screenshot...", placeholder=True)
-        threading.Thread(target=self._run_capture_task_in_thread, args=(run_brave_screenshot_task,)).start()
+
+        # Store thread reference
+        self.capture_thread = threading.Thread(target=self._run_capture_task_in_thread, args=(run_brave_screenshot_task,))
+        self.capture_thread.start()
+
+    def cancel_capture(self):
+        """Cancel the currently running screenshot capture"""
+        print("🛑 Cancelling screenshot capture...")
+        self.capture_cancelled.set()
+
+        # Hide cancel button
+        self.cancel_capture_button.grid_forget()
+        self.report_error_button.grid(row=1, column=0, columnspan=2, padx=0, pady=(5, 0), sticky="ew")
+
+        # Re-enable capture button
+        self.capture_button.configure(state="normal", text="Capture Question")
+        self._update_answer_textbox("Capture cancelled by user.", placeholder=False)
 
     def _run_capture_task_in_thread(self, task_function):
         capture_result_data = None
         try:
+            # Check for cancellation before starting
+            if self.capture_cancelled.is_set():
+                print("🛑 Capture cancelled before execution")
+                return
+
             capture_result_data = task_function()
+
+            # Check for cancellation after task completes
+            if self.capture_cancelled.is_set():
+                print("🛑 Capture cancelled during execution")
+                return
+
             screenshot_path = None; error_from_capture = None
             if isinstance(capture_result_data, dict): screenshot_path = capture_result_data.get("screenshot_path"); error_from_capture = capture_result_data.get("error")
             if screenshot_path and os.path.exists(screenshot_path):
@@ -2269,7 +2321,13 @@ class HomeworkApp(ctk.CTk):
                 else: final_error_message += " (Task returned unexpected data or None)."
                 self.after(0, self._update_screenshot_display, None, final_error_message); self.current_image_path=None; self.original_pil_image_for_crop=None; self.current_dropdown_data=[]
         except Exception as e: print(f"Error in capture task thread: {e}\n"); traceback.print_exc(); self.after(0, self._update_screenshot_display, None, f"Capture error: {e}"); self.current_image_path=None; self.original_pil_image_for_crop=None; self.current_dropdown_data=[]
-        finally: self.after(0, lambda: self.capture_button.configure(state="normal", text="Capture Question"))
+        finally:
+            # Hide cancel button and re-enable capture button
+            def cleanup_ui():
+                self.capture_button.configure(state="normal", text="Capture Question")
+                self.cancel_capture_button.grid_forget()
+                self.report_error_button.grid(row=1, column=0, columnspan=2, padx=0, pady=(5, 0), sticky="ew")
+            self.after(0, cleanup_ui)
 
     def _update_screenshot_display(self, pil_image_to_display: Image.Image = None, message: str = None): # type: ignore
         try:
@@ -3038,6 +3096,7 @@ The 'initial_analysis' object must contain:
    - "edmentum_dropdown" - Use when question_type is "dropdown_choice" with inline dropdown selections
    - "edmentum_fill_blank" - Use when question_type is "fill_in_blank" with text input fields
    - "edmentum_hot_text" - Use when question_type is "text_selection" with selectable text passages
+   - "edmentum_hot_spot" - Use when question_type is "hot_spot" with clickable image locations requiring bounding boxes
    - "standard_fallback" - Use for any other question types or mixed formats
 
 **INITIAL_ANALYSIS EXAMPLES:**
@@ -3155,6 +3214,58 @@ Hot Text (Text Selection):
   "metadata": {...},
   "identified_question": "Select the text passages that support the main argument.",
   "answers": [...]
+}
+```
+
+Hot Spot (Image Selection):
+```json
+{
+  "initial_analysis": {
+    "question_type": "hot_spot",
+    "edmentum_type_name": "Hot Spot (Image Selection)",
+    "placeholder_mapping": [],
+    "visual_elements": {
+      "has_image": true,
+      "has_diagram": true,
+      "has_graph": false,
+      "has_table": false,
+      "interactive_elements": ["click_selection"]
+    },
+    "rendering_strategy": "edmentum_hot_spot"
+  },
+  "metadata": {
+    "question_type": "hot_spot",
+    "num_answers": 2
+  },
+  "identified_question": "Which organisms are preyed upon by seals?",
+  "answers": [
+    {
+      "answer_id": "hot_spot_1",
+      "content_type": "hot_spot",
+      "hotspot_data": {
+        "x_percent": 15.0,
+        "y_percent": 30.0,
+        "width_percent": 12.0,
+        "height_percent": 15.0
+      },
+      "text_content": "Penguin",
+      "is_correct_option": true,
+      "confidence": 0.95
+    },
+    {
+      "answer_id": "hot_spot_2",
+      "content_type": "hot_spot",
+      "hotspot_data": {
+        "x_percent": 50.0,
+        "y_percent": 55.0,
+        "width_percent": 10.0,
+        "height_percent": 10.0
+      },
+      "text_content": "Krill",
+      "is_correct_option": true,
+      "confidence": 0.90
+    }
+  ]
 }
 ```
 

@@ -23,12 +23,14 @@ EDMENTUM_STYLES = {
     'bg_primary': '#FFFFFF',
     'bg_secondary': '#F8F9FA',
     'bg_container': '#FAFBFC',
+    'bg_info': '#E7F3FF',  # Light blue for info boxes
 
     # Blue (Primary)
     'blue_primary': '#0066CC',
     'blue_light': '#E7F3FF',
     'blue_hover': '#D4E9FF',
     'blue_selected': '#CCE5FF',
+    'blue_border': '#99CCFF',  # Medium blue for borders
 
     # Green (Correct)
     'green_correct': '#28A745',
@@ -71,6 +73,8 @@ EDMENTUM_DARK_STYLES = {
     'bg_primary': '#1E1E1E',
     'bg_secondary': '#2D2D2D',
     'bg_container': '#252525',
+    'bg_info': '#1a2332',  # Dark blue for info boxes
+    'blue_border': '#4d79cc',  # Brighter blue for dark mode borders
     'gray_border': '#404040',
     'gray_light': '#353535',
     'gray_text': '#B0B0B0',
