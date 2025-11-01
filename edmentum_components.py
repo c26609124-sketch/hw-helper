@@ -392,21 +392,19 @@ class EdmentumMatchedPairs(EdmentumComponent):
             corner_radius=EDMENTUM_STYLES['border_radius'],
             border_width=1,
             border_color=self.get_color('gray_border'),
-            width=250,
-            height=60
+            width=250
         )
-        term_frame.pack(side="left", padx=5)
-        term_frame.pack_propagate(False)
+        term_frame.pack(side="left", padx=5, fill="y")
 
         term_label = ctk.CTkLabel(
             term_frame,
             text=term_text,
             font=(EDMENTUM_STYLES['font_family'], EDMENTUM_STYLES['font_size_option']),
             text_color=self.get_color('gray_dark'),
-            wraplength=230,
+            wraplength=420,
             justify="left"
         )
-        term_label.pack(expand=True, padx=10, pady=10)
+        term_label.pack(expand=True, padx=10, pady=15)
 
         # Center: Arrow/Box
         center_frame = ctk.CTkFrame(row_frame, fg_color="transparent", width=80)
@@ -429,21 +427,19 @@ class EdmentumMatchedPairs(EdmentumComponent):
             corner_radius=EDMENTUM_STYLES['border_radius'],
             border_width=2,
             border_color=EDMENTUM_STYLES['blue_primary'],
-            width=250,
-            height=60
+            width=250
         )
-        match_frame.pack(side="left", padx=5)
-        match_frame.pack_propagate(False)
+        match_frame.pack(side="left", padx=5, fill="y")
 
         match_inner = ctk.CTkFrame(match_frame, fg_color="transparent")
-        match_inner.pack(fill="both", expand=True, padx=10, pady=10)
+        match_inner.pack(fill="both", expand=True, padx=10, pady=15)
 
         match_label = ctk.CTkLabel(
             match_inner,
             text=match_text,
             font=(EDMENTUM_STYLES['font_family'], EDMENTUM_STYLES['font_size_option']),
             text_color=EDMENTUM_STYLES['blue_primary'],
-            wraplength=210,
+            wraplength=420,
             justify="left"
         )
         match_label.pack(side="left", expand=True)

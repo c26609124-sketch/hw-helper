@@ -1,7 +1,19 @@
 {
-  "version": "1.0.33",
-  "release_date": "2025-10-31",
+  "version": "1.0.34",
+  "release_date": "2025-11-01",
   "changelog": [
+    {
+      "version": "1.0.34",
+      "date": "2025-11-01",
+      "changes": [
+        "CRITICAL FIX: Matching pairs now display full poetry paragraphs (no text cut-off)",
+        "FIX: Removed fixed 60px height constraint from term and match frames",
+        "FIX: Frames now dynamically expand vertically to fit content",
+        "UPDATE: Increased wraplength from 230/210 to 420 pixels for better text flow",
+        "UPDATE: Enhanced padding (pady=15) for more comfortable reading of long text",
+        "UPDATE: 4-6 line poetry excerpts now display completely without truncation"
+      ]
+    },
     {
       "version": "1.0.33",
       "date": "2025-10-31",
