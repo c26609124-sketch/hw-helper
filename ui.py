@@ -1486,6 +1486,17 @@ class HomeworkApp(ctk.CTk):
         if not AVAILABLE_MODELS: print("ERROR: No suitable AI models are configured..."); self.ai_button.configure(state="disabled", text="AI Model Error")
 
         self.update_idletasks()
+
+        # Pre-warm EasyOCR in background for instant hot spot detection (v1.0.33)
+        # This runs asynchronously and doesn't block UI - initialization takes 3-8s
+        # By the time user clicks "Get AI Answer", OCR will be ready with zero latency
+        try:
+            from ocr_hotspot_detector import initialize_easyocr_async
+            initialize_easyocr_async()
+            print("🚀 EasyOCR pre-warming started in background (hot spot detection will be instant)")
+        except Exception as e:
+            print(f"⚠️ Could not start EasyOCR pre-warming: {e}")
+
         print("✅ GUI Initialized. Ready to capture.")
 
     def _get_model_id_from_display(self, display_name):

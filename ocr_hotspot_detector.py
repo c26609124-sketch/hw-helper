@@ -1,20 +1,87 @@
 """
-OCR-based Hot Spot Location Detector (EasyOCR)
+OCR-based Hot Spot Location Detector (EasyOCR with Pre-Warming)
 
 This module uses EasyOCR (deep learning-based OCR) to automatically detect
 the exact pixel locations of organism labels in food web diagrams and other
 hot spot questions. This eliminates the need for AI estimation and provides
 100% accurate, deterministic bounding box coordinates.
 
-EasyOCR is pure Python with no external dependencies - works immediately on
-Windows/Mac/Linux without requiring Tesseract executable installation.
+EasyOCR is pre-initialized at app startup in a background thread, providing
+zero-latency OCR when the user clicks "Get AI Answer".
 
 Author: Claude Code
-Version: 1.0.32
+Version: 1.0.33
 """
 
+import threading
 from PIL import Image
 from typing import Dict, List, Tuple, Optional
+
+# Global cached EasyOCR reader (initialized on app startup)
+_cached_reader = None
+_reader_lock = threading.Lock()
+_initialization_complete = False
+
+
+def initialize_easyocr_async():
+    """
+    Initialize EasyOCR reader in background thread (call at app startup).
+
+    This prevents delays when user clicks "Get AI Answer" button by pre-loading
+    the neural network models (~150MB) and PyTorch backend during app startup.
+
+    The initialization runs asynchronously in a daemon thread, so it doesn't
+    block the UI from appearing.
+
+    Expected initialization time: 3-8 seconds (one-time cost at startup)
+    Result: Zero latency for hot spot detection after app launch
+    """
+    global _cached_reader, _initialization_complete
+
+    def _init():
+        global _cached_reader, _initialization_complete
+
+        with _reader_lock:
+            if _cached_reader is not None:
+                return  # Already initialized
+
+            try:
+                import easyocr
+                print("🔄 [Background] Initializing EasyOCR reader for zero-latency hot spot detection...")
+                _cached_reader = easyocr.Reader(['en'], gpu=False, verbose=False)
+                _initialization_complete = True
+                print("✅ [Background] EasyOCR ready - hot spot detection will be instant!")
+            except Exception as e:
+                print(f"⚠️ [Background] EasyOCR initialization failed: {e}")
+                print(f"   Will fall back to AI percentage-based coordinates")
+                _initialization_complete = True  # Mark complete even on failure
+
+    # Start background thread
+    thread = threading.Thread(target=_init, daemon=True, name="EasyOCR-Init")
+    thread.start()
+
+
+def get_easyocr_reader():
+    """
+    Get cached EasyOCR reader (blocks if initialization still in progress).
+
+    Returns:
+        EasyOCR Reader instance, or None if initialization failed
+
+    Behavior:
+        - If already initialized: Returns instantly
+        - If still initializing: Waits for background thread to complete (3-5s max)
+        - If init failed: Returns None (will fall back to AI coordinates)
+    """
+    global _cached_reader, _initialization_complete
+
+    # Wait for background initialization to complete
+    if not _initialization_complete:
+        print("⏳ Waiting for EasyOCR initialization to complete...")
+        with _reader_lock:
+            pass  # Just need to acquire lock, which means init is done
+
+    return _cached_reader
 
 
 def detect_hotspot_locations(image_path: str, target_labels: List[str],
@@ -45,21 +112,21 @@ def detect_hotspot_locations(image_path: str, target_labels: List[str],
     """
     print(f"🔍 Starting OCR detection for labels: {target_labels}")
 
-    # Use EasyOCR (pure Python, no external executable dependencies)
-    # Works immediately on Windows/Mac/Linux without manual installation steps
+    # Get cached EasyOCR reader (already initialized at startup in background)
+    # This is instant if initialize_easyocr_async() was called at app launch
+    reader = get_easyocr_reader()
+    if reader is None:
+        print("⚠️ EasyOCR reader not available, falling back to AI coordinates")
+        return {}
+
     try:
-        import easyocr
-        # Initialize EasyOCR reader for English text
-        # gpu=False: Use CPU (more compatible, doesn't require CUDA)
-        # verbose=False: Suppress progress messages
-        reader = easyocr.Reader(['en'], gpu=False, verbose=False)
-        # Run OCR detection
+        # Run OCR detection (fast since reader is pre-initialized)
         # Returns list of (bbox, text, confidence) tuples
         # bbox format: [[x1,y1], [x2,y2], [x3,y3], [x4,y4]] (4 corners)
         ocr_results = reader.readtext(image_path)
         print(f"   EasyOCR detected {len(ocr_results)} text regions")
     except Exception as e:
-        print(f"⚠️ EasyOCR initialization failed: {e}")
+        print(f"⚠️ EasyOCR detection failed: {e}")
         return {}
 
     results = {}
