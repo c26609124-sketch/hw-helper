@@ -4181,10 +4181,19 @@ If any part of the question or an answer involves a numeric value that you canno
             self.edmentum_component = component
 
             # Store answer_id -> index mapping for updates
-            self.answer_index_map = {
-                answer_spec.get("id", f"mc_option_{chr(65+i)}"): i
-                for i, answer_spec in enumerate(answer_structure)
-            }
+            # Include common ID variations for robust matching
+            self.answer_index_map = {}
+            for i, answer_spec in enumerate(answer_structure):
+                base_id = answer_spec.get("id", f"mc_option_{chr(65+i)}")
+                self.answer_index_map[base_id] = i
+
+                # Add common ID variation
+                if "mc_option" in base_id:
+                    variant_id = base_id.replace("mc_option", "multiple_choice")
+                    self.answer_index_map[variant_id] = i
+                elif "multiple_choice" in base_id:
+                    variant_id = base_id.replace("multiple_choice", "mc_option")
+                    self.answer_index_map[variant_id] = i
 
         elif strategy in ('edmentum_matching', 'edmentum_matching_pairs', 'edmentum_matched_pairs') and EDMENTUM_RENDERER_AVAILABLE:
             # Create EdmentumMatchedPairs component with placeholder pairs
@@ -4206,10 +4215,19 @@ If any part of the question or an answer involves a numeric value that you canno
             self.edmentum_component = component
 
             # Store answer_id -> index mapping for updates
-            self.answer_index_map = {
-                answer_spec.get("id", f"matching_pair_{i+1}"): i
-                for i, answer_spec in enumerate(answer_structure)
-            }
+            # Include BOTH "match_pair_X" and "matching_pair_X" variations for robust matching
+            self.answer_index_map = {}
+            for i, answer_spec in enumerate(answer_structure):
+                base_id = answer_spec.get("id", f"matching_pair_{i+1}")
+                self.answer_index_map[base_id] = i
+
+                # Add common ID variation to handle AI inconsistencies
+                if "matching_pair" in base_id:
+                    variant_id = base_id.replace("matching_pair", "match_pair")
+                    self.answer_index_map[variant_id] = i
+                elif "match_pair" in base_id:
+                    variant_id = base_id.replace("match_pair", "matching_pair")
+                    self.answer_index_map[variant_id] = i
 
         else:
             # Fallback: Use old skeleton approach for unsupported types

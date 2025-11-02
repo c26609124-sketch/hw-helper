@@ -1,7 +1,19 @@
 {
-  "version": "1.0.35",
+  "version": "1.0.36",
   "release_date": "2025-11-02",
   "changelog": [
+    {
+      "version": "1.0.36",
+      "date": "2025-11-02",
+      "changes": [
+        "CRITICAL FIX: Matching pairs terms now populate during streaming (ID mismatch resolved!)",
+        "CRITICAL FIX: answer_index_map now includes both ID variations (match_pair_X + matching_pair_X)",
+        "FIX: Seamless streaming now works correctly - terms and matches update in real-time",
+        "FIX: Eliminated 'No skeleton found' warnings when AI uses different ID format",
+        "UPDATE: Multiple choice also has robust ID matching (mc_option_X + multiple_choice_X)",
+        "TECHNICAL: Bidirectional ID mapping handles AI response inconsistencies gracefully"
+      ]
+    },
     {
       "version": "1.0.35",
       "date": "2025-11-02",
