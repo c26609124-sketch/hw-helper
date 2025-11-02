@@ -1492,6 +1492,9 @@ class HomeworkApp(ctk.CTk):
 
         self.update_idletasks()
 
+        # Clean up old temp files from previous sessions
+        self._cleanup_temp_files()
+
         # Pre-warm EasyOCR in background for instant hot spot detection (v1.0.33)
         # This runs asynchronously and doesn't block UI - initialization takes 3-8s
         # By the time user clicks "Get AI Answer", OCR will be ready with zero latency
@@ -1503,6 +1506,29 @@ class HomeworkApp(ctk.CTk):
             print(f"⚠️ Could not start EasyOCR pre-warming: {e}")
 
         print("✅ GUI Initialized. Ready to capture.")
+
+    def _cleanup_temp_files(self):
+        """Clean up temporary screenshot files to prevent disk accumulation"""
+        temp_files = [
+            "./temp_answer_display.png",
+            "./temp_annotated.png",
+            # Clean up old timestamp-based files from previous versions
+            *glob.glob("./temp_answer_display_*.png"),
+            *glob.glob("./temp_annotated_*.png")
+        ]
+
+        cleaned_count = 0
+        for temp_file in temp_files:
+            try:
+                if os.path.exists(temp_file):
+                    os.remove(temp_file)
+                    cleaned_count += 1
+            except Exception as e:
+                # Silently ignore cleanup errors (file might be in use)
+                pass
+
+        if cleaned_count > 0:
+            print(f"🧹 Cleaned up {cleaned_count} temp screenshot file(s)")
 
     def _get_model_id_from_display(self, display_name):
         """Convert display name back to model ID"""
@@ -2010,8 +2036,8 @@ class HomeworkApp(ctk.CTk):
             # Downscale to original size for crisp antialiased text
             img = img.resize((width, height), Image.LANCZOS)
 
-            # Save to temp file
-            temp_path = f"./temp_answer_display_{int(time.time())}.png"
+            # Save to temp file (fixed name to prevent accumulation)
+            temp_path = "./temp_answer_display.png"
             img.save(temp_path, quality=95, optimize=True)
             return temp_path
 
@@ -2077,7 +2103,7 @@ class HomeworkApp(ctk.CTk):
 
                 # If OCR found all labels, we're done!
                 if ocr_success_count == len(target_labels):
-                    temp_path = f"./temp_annotated_{int(time.time())}.png"
+                    temp_path = "./temp_annotated.png"
                     img.save(temp_path, quality=95)
                     print(f"✅ Saved OCR-annotated screenshot: {temp_path}")
                     print(f"🎯 100% OCR detection success ({ocr_success_count}/{len(target_labels)} labels)")
@@ -2157,8 +2183,8 @@ class HomeworkApp(ctk.CTk):
 
                 print(f"   ✓ Drew AI fallback box for '{text_content}' at ({x_percent:.1f}%, {y_percent:.1f}%) -> ({x}, {y})")
 
-            # Save annotated image
-            temp_path = f"./temp_annotated_{int(time.time())}.png"
+            # Save annotated image (fixed name to prevent accumulation)
+            temp_path = "./temp_annotated.png"
             img.save(temp_path, quality=95)
             print(f"✅ Saved annotated screenshot: {temp_path}")
 

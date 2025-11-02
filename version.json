@@ -1,7 +1,18 @@
 {
-  "version": "1.0.36",
+  "version": "1.0.37",
   "release_date": "2025-11-02",
   "changelog": [
+    {
+      "version": "1.0.37",
+      "date": "2025-11-02",
+      "changes": [
+        "FIX: Temp screenshot files no longer accumulate on disk (fixed filenames instead of timestamps)",
+        "NEW: Cleanup method removes old temp files at app startup",
+        "UPDATE: temp_answer_display.png and temp_annotated.png now use fixed names (auto-overwrite)",
+        "UPDATE: Startup cleanup removes old timestamp-based files from previous versions",
+        "PRIVACY: Reduced disk footprint - only 1-2 temp files exist at any time"
+      ]
+    },
     {
       "version": "1.0.36",
       "date": "2025-11-02",
