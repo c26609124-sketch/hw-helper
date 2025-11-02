@@ -1,7 +1,23 @@
 {
-  "version": "1.0.34",
-  "release_date": "2025-11-01",
+  "version": "1.0.35",
+  "release_date": "2025-11-02",
   "changelog": [
+    {
+      "version": "1.0.35",
+      "date": "2025-11-02",
+      "changes": [
+        "NEW: Seamless streaming - Edmentum components render from the start (zero visual jump!)",
+        "NEW: update_pair_data() and update_option_data() methods for in-place text updates",
+        "CRITICAL FIX: Eliminated jarring re-render when streaming completes",
+        "FIX: Answers now stream directly into final Edmentum design (no skeleton → final transition)",
+        "UPDATE: _create_skeletons_from_metadata() creates actual Edmentum components with placeholders",
+        "UPDATE: _replace_skeleton_with_answer() calls component update methods (no destroy/recreate)",
+        "UPDATE: _render_edmentum_question() skips re-render if component already exists",
+        "PERFORMANCE: Faster rendering - no widget destruction at stream end",
+        "UX: Consistent visual state throughout streaming (placeholder text updates in-place)",
+        "TECHNICAL: Component-based streaming architecture for matching pairs and multiple choice"
+      ]
+    },
     {
       "version": "1.0.34",
       "date": "2025-11-01",

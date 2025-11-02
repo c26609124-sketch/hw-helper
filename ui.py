@@ -39,7 +39,12 @@ except ImportError as e:
 
 # --- Edmentum Question Renderer ---
 try:
-    from edmentum_components import EdmentumQuestionRenderer
+    from edmentum_components import (
+        EdmentumQuestionRenderer,
+        EdmentumMultipleChoice,
+        EdmentumMatchedPairs,
+        EdmentumHotText
+    )
     EDMENTUM_RENDERER_AVAILABLE = True
 except ImportError as e:
     print(f"Note: Edmentum renderer not available: {e}")
@@ -4131,8 +4136,8 @@ If any part of the question or an answer involves a numeric value that you canno
 
     def _create_skeletons_from_metadata(self, metadata: Dict):
         """
-        Create skeleton placeholders in FINAL Edmentum format based on rendering strategy
-        This eliminates the two-stage rendering latency
+        Create ACTUAL Edmentum components with placeholder data for seamless streaming
+        This eliminates visual jump by showing final design from the start
 
         Args:
             metadata: The metadata object with question_type, total_answers, and answer_structure
@@ -4141,48 +4146,96 @@ If any part of the question or an answer involves a numeric value that you canno
             print("⚠️ Invalid metadata, skipping skeleton creation")
             return
 
-        # Get rendering strategy from cached analysis
+        # Get rendering strategy and question text from cached analysis
         strategy = ''
+        question_text = 'Loading question...'
         if hasattr(self, 'cached_analysis') and isinstance(self.cached_analysis, dict):
             strategy = self.cached_analysis.get('rendering_strategy', '')
+            question_text = self.cached_analysis.get('identified_question', 'Loading question...')
 
         answer_structure = metadata.get("answer_structure", [])
         if not answer_structure:
             return
 
-        print(f"🎨 Creating {len(answer_structure)} skeleton placeholders...")
+        print(f"🎨 Creating Edmentum component with {len(answer_structure)} items (seamless streaming)...")
 
-        # Create skeletons based on rendering strategy
-        if strategy == 'edmentum_multiple_choice':
-            # Multiple choice: Create Edmentum-styled MC skeletons
+        # NEW APPROACH: Create actual Edmentum components with placeholder data
+        if strategy == 'edmentum_multiple_choice' and EDMENTUM_RENDERER_AVAILABLE:
+            # Create EdmentumMultipleChoice component with placeholder options
+            placeholder_options = []
             for i, answer_spec in enumerate(answer_structure):
                 answer_id = answer_spec.get("id", f"mc_option_{chr(65+i)}")
-                letter = chr(65 + i)  # A, B, C, D
-                skeleton = self._create_edmentum_mc_skeleton(letter, answer_id)
-                self.skeleton_frames[answer_id] = skeleton
+                placeholder_options.append({
+                    'label': chr(65 + i),  # A, B, C, D
+                    'text': 'Loading option...',
+                    'id': answer_id,
+                    'is_correct': False
+                })
 
-        elif strategy == 'edmentum_matching':
-            # Matching pairs: Create Edmentum-styled matching skeletons
+            # Create component and store reference
+            component = EdmentumMultipleChoice(
+                self.progressive_answers_container,
+                question_text,
+                placeholder_options
+            )
+            self.edmentum_component = component
+
+            # Store answer_id -> index mapping for updates
+            self.answer_index_map = {
+                answer_spec.get("id", f"mc_option_{chr(65+i)}"): i
+                for i, answer_spec in enumerate(answer_structure)
+            }
+
+        elif strategy in ('edmentum_matching', 'edmentum_matching_pairs', 'edmentum_matched_pairs') and EDMENTUM_RENDERER_AVAILABLE:
+            # Create EdmentumMatchedPairs component with placeholder pairs
+            placeholder_pairs = []
             for i, answer_spec in enumerate(answer_structure):
                 answer_id = answer_spec.get("id", f"matching_pair_{i+1}")
-                skeleton = self._create_edmentum_matching_skeleton(i + 1, answer_id)
-                self.skeleton_frames[answer_id] = skeleton
+                placeholder_pairs.append({
+                    'term': 'Loading term...',
+                    'match': 'Loading match...',
+                    'is_correct': True
+                })
 
-        elif strategy == 'edmentum_hot_text':
-            # Hot text: Create Edmentum-styled selection skeletons
-            for i, answer_spec in enumerate(answer_structure):
-                answer_id = answer_spec.get("id", f"hot_text_{i+1}")
-                skeleton = self._create_edmentum_hottext_skeleton(i + 1, answer_id)
-                self.skeleton_frames[answer_id] = skeleton
+            # Create component and store reference
+            component = EdmentumMatchedPairs(
+                self.progressive_answers_container,
+                question_text,
+                placeholder_pairs
+            )
+            self.edmentum_component = component
+
+            # Store answer_id -> index mapping for updates
+            self.answer_index_map = {
+                answer_spec.get("id", f"matching_pair_{i+1}"): i
+                for i, answer_spec in enumerate(answer_structure)
+            }
 
         else:
-            # Fallback: Use generic skeletons for unknown strategies
-            for answer_spec in answer_structure:
-                answer_type = answer_spec.get("type", "generic")
-                answer_id = answer_spec.get("id", f"skeleton_{len(self.skeleton_frames)}")
-                label = answer_spec.get("label", "")
-                skeleton = self._create_skeleton_for_type(answer_type, answer_id, label)
-                self.skeleton_frames[answer_id] = skeleton
+            # Fallback: Use old skeleton approach for unsupported types
+            if strategy == 'edmentum_multiple_choice':
+                for i, answer_spec in enumerate(answer_structure):
+                    answer_id = answer_spec.get("id", f"mc_option_{chr(65+i)}")
+                    letter = chr(65 + i)
+                    skeleton = self._create_edmentum_mc_skeleton(letter, answer_id)
+                    self.skeleton_frames[answer_id] = skeleton
+            elif strategy in ('edmentum_matching', 'edmentum_matching_pairs'):
+                for i, answer_spec in enumerate(answer_structure):
+                    answer_id = answer_spec.get("id", f"matching_pair_{i+1}")
+                    skeleton = self._create_edmentum_matching_skeleton(i + 1, answer_id)
+                    self.skeleton_frames[answer_id] = skeleton
+            elif strategy == 'edmentum_hot_text':
+                for i, answer_spec in enumerate(answer_structure):
+                    answer_id = answer_spec.get("id", f"hot_text_{i+1}")
+                    skeleton = self._create_edmentum_hottext_skeleton(i + 1, answer_id)
+                    self.skeleton_frames[answer_id] = skeleton
+            else:
+                for answer_spec in answer_structure:
+                    answer_type = answer_spec.get("type", "generic")
+                    answer_id = answer_spec.get("id", f"skeleton_{len(self.skeleton_frames)}")
+                    label = answer_spec.get("label", "")
+                    skeleton = self._create_skeleton_for_type(answer_type, answer_id, label)
+                    self.skeleton_frames[answer_id] = skeleton
 
     def _render_progressive_content(self, new_data: Dict):
         """Render newly complete JSON objects as formatted UI elements (PHASE 2)"""
@@ -4251,15 +4304,42 @@ If any part of the question or an answer involves a numeric value that you canno
 
     def _replace_skeleton_with_answer(self, answer_id: str, answer_item: Dict):
         """
-        Update skeleton placeholder with real answer data (TRUE progressive streaming)
+        Update placeholder with real answer data using seamless in-place updates
 
-        Instead of destroying and recreating, we update the skeleton's content in-place
-        for smooth, flicker-free transitions.
+        NEW APPROACH: If we have an Edmentum component, call its update method.
+        OLD APPROACH: If using skeleton frames, update content in-place.
 
         Args:
             answer_id: The ID of the answer/skeleton to replace
             answer_item: The complete answer data to render
         """
+        # NEW APPROACH: Update Edmentum component directly (seamless streaming)
+        if hasattr(self, 'edmentum_component') and hasattr(self, 'answer_index_map'):
+            if answer_id in self.answer_index_map:
+                index = self.answer_index_map[answer_id]
+                content_type = answer_item.get("content_type", "")
+
+                # Update the appropriate component based on type
+                if content_type == "multiple_choice_option":
+                    text = answer_item.get("text_content", "")
+                    is_correct = answer_item.get("is_correct_option", False)
+                    self.edmentum_component.update_option_data(index, text=text, is_correct=is_correct)
+                    print(f"   ✓ Updated option {index} seamlessly")
+
+                elif content_type == "matching_pair":
+                    pair_data = answer_item.get("pair_data", {})
+                    term = pair_data.get("term", "")
+                    match = pair_data.get("match", "")
+                    self.edmentum_component.update_pair_data(index, term=term, match=match)
+                    print(f"   ✓ Updated pair {index} seamlessly")
+
+                # Auto-scroll as answers stream in
+                if not hasattr(self, '_scroll_pending') or not self._scroll_pending:
+                    self._scroll_pending = True
+                    self.after(300, self._debounced_scroll)
+                return
+
+        # OLD APPROACH: Fallback to skeleton frame updates for unsupported types
         if answer_id not in self.skeleton_frames:
             print(f"⚠️ Skeleton not found for {answer_id}")
             return
@@ -4801,6 +4881,9 @@ If any part of the question or an answer involves a numeric value that you canno
         """
         Render question using Edmentum visual style
 
+        NEW BEHAVIOR: If component was created during streaming, skip re-render
+        (component is already populated with real data via seamless updates)
+
         Args:
             analysis: initial_analysis dict
             response_data: Complete AI response data
@@ -4812,11 +4895,22 @@ If any part of the question or an answer involves a numeric value that you canno
             return False
 
         try:
-            # DON'T destroy progressive answers - they have the green highlighting!
-            # Just hide the streaming status label instead
+            # Hide streaming status label
             if hasattr(self, 'streaming_status_label') and self.streaming_status_label.winfo_exists():
                 self.streaming_status_label.pack_forget()
 
+            # NEW: Check if Edmentum component already exists from streaming
+            if hasattr(self, 'edmentum_component'):
+                print("✓ Edmentum component already rendered during streaming (seamless!)")
+                # Component is already populated with real data - no re-render needed
+                # Just clean up any other streaming UI elements
+                if hasattr(self, 'streaming_container') and self.streaming_container.winfo_exists():
+                    for widget in self.streaming_container.winfo_children():
+                        if widget != self.progressive_answers_container:
+                            widget.destroy()
+                return True
+
+            # OLD: Fallback to traditional rendering if component wasn't created during streaming
             # Clear ONLY the initial analysis display from streaming container
             # Keep progressive_answers_container with its skeleton frames intact
             if hasattr(self, 'streaming_container') and self.streaming_container.winfo_exists():

@@ -231,6 +231,9 @@ class EdmentumMultipleChoice(EdmentumComponent):
         self.options = options
         self.correct_answer_id = correct_answer_id
 
+        # Store widget references for in-place updates during streaming
+        self.option_widgets = []  # List of {'label': CTkLabel, 'frame': CTkFrame, 'checkmark': CTkLabel}
+
         self._build_ui()
 
     def _build_ui(self):
@@ -295,6 +298,7 @@ class EdmentumMultipleChoice(EdmentumComponent):
         option_label.pack(side="left", fill="x", expand=True)
 
         # Checkmark for correct answer
+        checkmark = None
         if is_correct:
             checkmark = ctk.CTkLabel(
                 inner_frame,
@@ -307,6 +311,63 @@ class EdmentumMultipleChoice(EdmentumComponent):
         # NOTE: Confidence badges removed for multiple choice
         # The is_correct_option field is the authoritative indicator of correctness
         # Confidence can be misleading when AI marks all options with similar high confidence
+
+        # Store widget references for in-place updates
+        self.option_widgets.append({
+            'label': option_label,
+            'frame': option_frame,
+            'checkmark': checkmark
+        })
+
+    def update_option_data(self, option_index: int, text: str = None, is_correct: bool = None):
+        """
+        Update a specific option's data in-place during streaming (no widget recreation)
+
+        Args:
+            option_index: Index of the option to update (0-based)
+            text: New option text (None to keep existing)
+            is_correct: New correctness status (None to keep existing)
+        """
+        if option_index < 0 or option_index >= len(self.option_widgets):
+            print(f"⚠️ Invalid option_index {option_index} for update")
+            return
+
+        widgets = self.option_widgets[option_index]
+
+        # Update text label if provided
+        if text is not None and widgets['label'].winfo_exists():
+            widgets['label'].configure(text=text)
+
+        # Update correctness styling if provided
+        if is_correct is not None and widgets['frame'].winfo_exists():
+            if is_correct:
+                # Change to correct styling
+                widgets['frame'].configure(
+                    fg_color=self.get_color('green_light'),
+                    border_width=2,
+                    border_color=EDMENTUM_STYLES['green_correct']
+                )
+                # Add checkmark if not present
+                if widgets['checkmark'] is None or not widgets['checkmark'].winfo_exists():
+                    checkmark = ctk.CTkLabel(
+                        widgets['label'].master,
+                        text="✓",
+                        font=("Arial", 18, "bold"),
+                        text_color=EDMENTUM_STYLES['green_correct']
+                    )
+                    checkmark.pack(side="right", padx=(10, 0))
+                    widgets['checkmark'] = checkmark
+            else:
+                # Change to incorrect styling
+                widgets['frame'].configure(
+                    fg_color=self.get_color('bg_secondary'),
+                    border_width=1,
+                    border_color=self.get_color('gray_border')
+                )
+                # Remove checkmark if present
+                if widgets['checkmark'] and widgets['checkmark'].winfo_exists():
+                    widgets['checkmark'].destroy()
+                    widgets['checkmark'] = None
 
 
 # ============================================================================
@@ -329,6 +390,9 @@ class EdmentumMatchedPairs(EdmentumComponent):
         super().__init__(parent)
         self.question_text = question_text
         self.pairs = pairs
+
+        # Store widget references for in-place updates during streaming
+        self.pair_widgets = []  # List of {'term_label': CTkLabel, 'match_label': CTkLabel}
 
         self._build_ui()
 
@@ -463,6 +527,35 @@ class EdmentumMatchedPairs(EdmentumComponent):
                 text_color=self.get_color('gray_text')
             )
             conf_label.pack(side="left", padx=10)
+
+        # Store widget references for in-place updates
+        self.pair_widgets.append({
+            'term_label': term_label,
+            'match_label': match_label
+        })
+
+    def update_pair_data(self, pair_index: int, term: str = None, match: str = None):
+        """
+        Update a specific pair's data in-place during streaming (no widget recreation)
+
+        Args:
+            pair_index: Index of the pair to update (0-based)
+            term: New term text (None to keep existing)
+            match: New match text (None to keep existing)
+        """
+        if pair_index < 0 or pair_index >= len(self.pair_widgets):
+            print(f"⚠️ Invalid pair_index {pair_index} for update")
+            return
+
+        widgets = self.pair_widgets[pair_index]
+
+        # Update term label if provided
+        if term is not None and widgets['term_label'].winfo_exists():
+            widgets['term_label'].configure(text=term)
+
+        # Update match label if provided
+        if match is not None and widgets['match_label'].winfo_exists():
+            widgets['match_label'].configure(text=match)
 
 
 # ============================================================================
