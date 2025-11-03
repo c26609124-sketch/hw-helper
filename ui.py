@@ -2407,11 +2407,16 @@ class HomeworkApp(ctk.CTk):
         # Clear cancellation flag
         self.capture_cancelled.clear()
 
-        # Show cancel button
-        self.cancel_capture_button.grid(row=1, column=0, columnspan=2, padx=0, pady=(5, 0), sticky="ew")
-        self.report_error_button.grid(row=2, column=0, columnspan=2, padx=0, pady=(5, 0), sticky="ew")
+        # Transform Capture button into Cancel button
+        self.capture_button.configure(
+            text="✖ Cancel Capture",
+            fg_color="#FF6B6B",
+            hover_color="#EE5A5A",
+            command=self.cancel_capture,
+            state="normal"
+        )
 
-        self.capture_button.configure(state="disabled", text="Capturing..."); self._update_screenshot_display(None)
+        self._update_screenshot_display(None)
         self.progress_dots.set_step(0)  # Reset to step 1
         self.current_dropdown_data = []; self._clear_answers(); self._update_answer_textbox("Waiting for screenshot...", placeholder=True)
 
@@ -2424,12 +2429,15 @@ class HomeworkApp(ctk.CTk):
         print("🛑 Cancelling screenshot capture...")
         self.capture_cancelled.set()
 
-        # Hide cancel button
-        self.cancel_capture_button.grid_forget()
-        self.report_error_button.grid(row=1, column=0, columnspan=2, padx=0, pady=(5, 0), sticky="ew")
+        # Transform Cancel button back to Capture button
+        self.capture_button.configure(
+            text="Capture Question",
+            fg_color="#3498DB",
+            hover_color="#2980B9",
+            command=self.start_capture_thread,
+            state="normal"
+        )
 
-        # Re-enable capture button
-        self.capture_button.configure(state="normal", text="Capture Question")
         self._update_answer_textbox("Capture cancelled by user.", placeholder=False)
 
     def _run_capture_task_in_thread(self, task_function):
@@ -2465,11 +2473,15 @@ class HomeworkApp(ctk.CTk):
                 self.after(0, self._update_screenshot_display, None, final_error_message); self.current_image_path=None; self.original_pil_image_for_crop=None; self.current_dropdown_data=[]
         except Exception as e: print(f"Error in capture task thread: {e}\n"); traceback.print_exc(); self.after(0, self._update_screenshot_display, None, f"Capture error: {e}"); self.current_image_path=None; self.original_pil_image_for_crop=None; self.current_dropdown_data=[]
         finally:
-            # Hide cancel button and re-enable capture button
+            # Transform Cancel button back to Capture button
             def cleanup_ui():
-                self.capture_button.configure(state="normal", text="Capture Question")
-                self.cancel_capture_button.grid_forget()
-                self.report_error_button.grid(row=1, column=0, columnspan=2, padx=0, pady=(5, 0), sticky="ew")
+                self.capture_button.configure(
+                    text="Capture Question",
+                    fg_color="#3498DB",
+                    hover_color="#2980B9",
+                    command=self.start_capture_thread,
+                    state="normal"
+                )
             self.after(0, cleanup_ui)
 
     def _update_screenshot_display(self, pil_image_to_display: Image.Image = None, message: str = None): # type: ignore

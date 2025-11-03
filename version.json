@@ -1,7 +1,17 @@
 {
-  "version": "1.0.39",
+  "version": "1.0.40",
   "release_date": "2025-11-02",
   "changelog": [
+    {
+      "version": "1.0.40",
+      "date": "2025-11-02",
+      "changes": [
+        "NEW: Capture button transforms into Cancel button during capture (cleaner UX)",
+        "UPDATE: Button changes text, color, and command dynamically (blue → red)",
+        "UPDATE: Removed separate cancel button - single button now handles both states",
+        "UX: In-place button transformation feels more responsive and intuitive"
+      ]
+    },
     {
       "version": "1.0.39",
       "date": "2025-11-02",
