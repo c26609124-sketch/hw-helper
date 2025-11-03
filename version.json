@@ -1,7 +1,20 @@
 {
-  "version": "1.0.40",
+  "version": "1.0.41",
   "release_date": "2025-11-02",
   "changelog": [
+    {
+      "version": "1.0.41",
+      "date": "2025-11-02",
+      "changes": [
+        "CRITICAL FIX: 'Loading term...' placeholders now actually update during streaming!",
+        "CRITICAL FIX: Ugly green containers with raw match data no longer appear",
+        "CRITICAL FIX: Streaming routing now prioritizes component updates over skeleton checks",
+        "FIX: EdmentumMatchedPairs components now receive real-time updates as data streams",
+        "FIX: answer_index_map checked BEFORE skeleton_frames in routing logic",
+        "UPDATE: 3-tier routing priority (component → skeleton → direct render)",
+        "UX: Single consistent Edmentum design throughout streaming (no dual displays)"
+      ]
+    },
     {
       "version": "1.0.40",
       "date": "2025-11-02",

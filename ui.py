@@ -4345,12 +4345,19 @@ If any part of the question or an answer involves a numeric value that you canno
                                     actual_skeleton_id = variant
                                     break
 
-                        # Check if we have a skeleton for this answer
-                        if actual_skeleton_id and actual_skeleton_id in self.skeleton_frames:
+                        # Check if we have an Edmentum component or skeleton for this answer
+                        # PRIORITY 1: Edmentum component updates (seamless streaming v1.0.35+)
+                        if hasattr(self, 'edmentum_component') and hasattr(self, 'answer_index_map') and answer_id in self.answer_index_map:
+                            # Update Edmentum component directly (real-time placeholder updates)
+                            self._replace_skeleton_with_answer(answer_id, answer)
+                        # PRIORITY 2: Skeleton frame updates (fallback for unsupported types)
+                        elif actual_skeleton_id and actual_skeleton_id in self.skeleton_frames:
+                            # Update skeleton frame content
                             self._replace_skeleton_with_answer(actual_skeleton_id, answer)
+                        # PRIORITY 3: No component or skeleton - create new container
                         else:
-                            # No skeleton exists, render normally (fallback mode)
-                            print(f"   ➕ No skeleton for {answer_id}, rendering directly")
+                            # Truly orphaned answer - render directly
+                            print(f"   ➕ No component or skeleton for {answer_id}, rendering directly")
                             self._add_progressive_answer_item(answer)
                     except Exception as item_error:
                         print(f"⚠️ Failed to render answer item: {item_error}")
