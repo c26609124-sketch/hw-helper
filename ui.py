@@ -3,6 +3,7 @@ from PIL import Image, ImageDraw, ImageFont
 import threading
 import sys
 import os
+import glob
 import time
 import json
 import traceback

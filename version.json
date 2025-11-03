@@ -1,7 +1,16 @@
 {
-  "version": "1.0.37",
+  "version": "1.0.38",
   "release_date": "2025-11-02",
   "changelog": [
+    {
+      "version": "1.0.38",
+      "date": "2025-11-02",
+      "changes": [
+        "CRITICAL FIX: Added missing glob import (v1.0.37 caused startup crash on Windows!)",
+        "CRITICAL FIX: App now launches successfully on all platforms",
+        "STABILITY: Resolved NameError that prevented UI initialization"
+      ]
+    },
     {
       "version": "1.0.37",
       "date": "2025-11-02",
@@ -11,7 +20,8 @@
         "UPDATE: temp_answer_display.png and temp_annotated.png now use fixed names (auto-overwrite)",
         "UPDATE: Startup cleanup removes old timestamp-based files from previous versions",
         "PRIVACY: Reduced disk footprint - only 1-2 temp files exist at any time"
-      ]
+      ],
+      "notes": "v1.0.37 had critical startup crash - upgrade to v1.0.38 immediately"
     },
     {
       "version": "1.0.36",
