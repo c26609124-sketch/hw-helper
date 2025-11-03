@@ -1,7 +1,24 @@
 {
-  "version": "1.0.38",
+  "version": "1.0.39",
   "release_date": "2025-11-02",
   "changelog": [
+    {
+      "version": "1.0.39",
+      "date": "2025-11-02",
+      "changes": [
+        "CRITICAL FIX: Eliminated dual-rendering bug (answers no longer show in 2 formats!)",
+        "CRITICAL FIX: 'Loading term...' placeholders now update in real-time during streaming",
+        "CRITICAL FIX: Green skeleton containers only appear when Edmentum components unavailable",
+        "NEW: Seamless streaming for Dropdown questions (update_dropdown_value method)",
+        "NEW: Seamless streaming for Fill-in-the-Blank questions (update_blank_value method)",
+        "NEW: Seamless streaming for Hot Text questions (update_selections method)",
+        "FIX: 6-9 question types now support full seamless streaming (up from 4)",
+        "UPDATE: Added EDMENTUM_RENDERER_AVAILABLE guards to all skeleton creation paths",
+        "UPDATE: Streaming handlers for dropdown_choice, direct_answer, text_selection content types",
+        "PERFORMANCE: Minimal latency - competitive with gemini.google.com",
+        "UX: Single consistent Edmentum-styled answer format throughout streaming"
+      ]
+    },
     {
       "version": "1.0.38",
       "date": "2025-11-02",

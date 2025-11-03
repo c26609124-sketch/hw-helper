@@ -577,6 +577,7 @@ class EdmentumDropdown(EdmentumComponent):
         super().__init__(parent)
         self.question_text = question_text
         self.dropdowns = dropdowns
+        self.text_display = None  # Store reference to textbox for streaming updates
 
         self._build_ui()
 
@@ -651,6 +652,9 @@ class EdmentumDropdown(EdmentumComponent):
         # Make read-only
         text_display.configure(state="disabled")
 
+        # Store reference for streaming updates
+        self.text_display = text_display
+
     def _find_dropdown(self, placeholder_id: str) -> Optional[Dict]:
         """Find dropdown data by placeholder ID"""
         for dd in self.dropdowns:
@@ -709,6 +713,65 @@ class EdmentumDropdown(EdmentumComponent):
         )
         arrow.pack(side="left", padx=(6, 0))
 
+    def update_dropdown_value(self, dropdown_index: int, selected_text: str = None, confidence: float = None):
+        """
+        Update a specific dropdown's selected value in-place during streaming (no widget recreation)
+
+        Args:
+            dropdown_index: Index of dropdown to update
+            selected_text: New selected text value
+            confidence: Confidence score (optional)
+        """
+        if dropdown_index < 0 or dropdown_index >= len(self.dropdowns):
+            print(f"⚠️ Invalid dropdown_index {dropdown_index} for update")
+            return
+
+        # Update dropdown data
+        if selected_text is not None:
+            self.dropdowns[dropdown_index]['selected_text'] = selected_text
+        if confidence is not None:
+            self.dropdowns[dropdown_index]['confidence'] = confidence
+
+        # Rebuild the textbox content if it exists
+        if self.text_display and self.text_display.winfo_exists():
+            # Re-enable textbox for editing
+            self.text_display.configure(state="normal")
+
+            # Clear existing content
+            self.text_display.delete("1.0", "end")
+
+            # Rebuild text with updated dropdown values
+            text = self.question_text
+            placeholder_pattern = r'\{\{([^}]+)\}\}'
+            matches = list(re.finditer(placeholder_pattern, text))
+
+            full_text = ""
+            current_pos = 0
+            for match in matches:
+                # Text before placeholder
+                before_text = text[current_pos:match.start()]
+                full_text += before_text
+
+                # Dropdown placeholder (show selected value inline)
+                placeholder_id = match.group(1)
+                dropdown_data = self._find_dropdown(placeholder_id)
+                if dropdown_data:
+                    selected = dropdown_data.get('selected_text',
+                                                 dropdown_data.get('text_content', '???'))
+                    full_text += f" [{selected}] "
+
+                current_pos = match.end()
+
+            # Text after last placeholder
+            after_text = text[current_pos:]
+            full_text += after_text
+
+            # Insert updated text
+            self.text_display.insert("1.0", full_text)
+
+            # Make read-only again
+            self.text_display.configure(state="disabled")
+
 
 # ============================================================================
 # FILL IN THE BLANK COMPONENT
@@ -729,6 +792,7 @@ class EdmentumFillBlank(EdmentumComponent):
         super().__init__(parent)
         self.question_text = question_text
         self.blanks = blanks
+        self.blank_widgets = []  # Store widget references for streaming updates
 
         self._build_ui()
 
@@ -825,6 +889,34 @@ class EdmentumFillBlank(EdmentumComponent):
         )
         value_label.pack(padx=12, pady=6)
 
+        # Store widget reference for streaming updates
+        self.blank_widgets.append({'label': value_label, 'frame': input_frame})
+
+    def update_blank_value(self, blank_index: int, value: str = None, confidence: float = None):
+        """
+        Update a specific blank's value in-place during streaming (no widget recreation)
+
+        Args:
+            blank_index: Index of blank to update
+            value: New text value for the blank
+            confidence: Confidence score (optional)
+        """
+        if blank_index < 0 or blank_index >= len(self.blanks):
+            print(f"⚠️ Invalid blank_index {blank_index} for update")
+            return
+
+        # Update blank data
+        if value is not None:
+            self.blanks[blank_index]['text_content'] = value
+        if confidence is not None:
+            self.blanks[blank_index]['confidence'] = confidence
+
+        # Update widget label if it exists
+        if blank_index < len(self.blank_widgets):
+            widgets = self.blank_widgets[blank_index]
+            if widgets['label'].winfo_exists():
+                widgets['label'].configure(text=value if value is not None else '???')
+
 
 # ============================================================================
 # HOT TEXT COMPONENT
@@ -848,6 +940,8 @@ class EdmentumHotText(EdmentumComponent):
         self.question_text = question_text
         self.passage = passage
         self.selected_texts = selected_texts
+        self.passage_text = None  # Store reference to passage textbox for streaming updates
+        self.selections_container = None  # Store reference to selections container
 
         self._build_ui()
 
@@ -915,6 +1009,9 @@ class EdmentumHotText(EdmentumComponent):
         # Make read-only
         passage_text.configure(state="disabled")
 
+        # Store reference for streaming updates
+        self.passage_text = passage_text
+
         # Add large text section showing correct selections
         selections_container = ctk.CTkFrame(
             self.parent,
@@ -956,6 +1053,70 @@ class EdmentumHotText(EdmentumComponent):
 
         # Bottom padding
         ctk.CTkLabel(selections_container, text="", height=5).pack()
+
+        # Store reference for streaming updates
+        self.selections_container = selections_container
+
+    def update_selections(self, new_selections: List[str] = None):
+        """
+        Update selected text highlights in-place during streaming (no widget recreation)
+
+        Args:
+            new_selections: List of new text selections to add/update
+        """
+        if new_selections is not None:
+            self.selected_texts = new_selections
+
+        # Re-apply highlights to passage if it exists
+        if self.passage_text and self.passage_text.winfo_exists():
+            # Enable for editing
+            self.passage_text.configure(state="normal")
+
+            # Remove old highlight tags
+            self.passage_text.tag_remove("highlight", "1.0", "end")
+
+            # Re-apply highlights for all selections
+            for selected in self.selected_texts:
+                start_idx = "1.0"
+                while True:
+                    pos = self.passage_text.search(selected, start_idx, stopindex="end")
+                    if not pos:
+                        break
+                    end_pos = f"{pos}+{len(selected)}c"
+                    self.passage_text.tag_add("highlight", pos, end_pos)
+                    start_idx = end_pos
+
+            # Make read-only again
+            self.passage_text.configure(state="disabled")
+
+        # Rebuild selections container if it exists
+        if self.selections_container and self.selections_container.winfo_exists():
+            # Clear existing selection boxes (keep title)
+            for widget in self.selections_container.winfo_children()[1:]:  # Skip title
+                widget.destroy()
+
+            # Show each selected text in large, bold format
+            for selected in self.selected_texts:
+                answer_frame = ctk.CTkFrame(
+                    self.selections_container,
+                    fg_color=EDMENTUM_STYLES['green_correct'],
+                    corner_radius=8,
+                    height=40
+                )
+                answer_frame.pack(fill="x", padx=15, pady=5)
+
+                answer_label = ctk.CTkLabel(
+                    answer_frame,
+                    text=f"• {selected}",
+                    font=(EDMENTUM_STYLES['font_family'], 18, "bold"),
+                    text_color="white",
+                    wraplength=650,
+                    anchor="w"
+                )
+                answer_label.pack(fill="both", expand=True, padx=15, pady=10)
+
+            # Bottom padding
+            ctk.CTkLabel(self.selections_container, text="", height=5).pack()
 
 
 class EdmentumHotSpot(EdmentumComponent):

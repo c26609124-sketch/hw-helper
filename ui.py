@@ -4257,24 +4257,26 @@ If any part of the question or an answer involves a numeric value that you canno
                     self.answer_index_map[variant_id] = i
 
         else:
-            # Fallback: Use old skeleton approach for unsupported types
-            if strategy == 'edmentum_multiple_choice':
+            # Fallback: Use old skeleton approach ONLY when Edmentum components unavailable
+            # This prevents dual-rendering where both component AND skeleton appear together
+            if strategy == 'edmentum_multiple_choice' and not EDMENTUM_RENDERER_AVAILABLE:
                 for i, answer_spec in enumerate(answer_structure):
                     answer_id = answer_spec.get("id", f"mc_option_{chr(65+i)}")
                     letter = chr(65 + i)
                     skeleton = self._create_edmentum_mc_skeleton(letter, answer_id)
                     self.skeleton_frames[answer_id] = skeleton
-            elif strategy in ('edmentum_matching', 'edmentum_matching_pairs'):
+            elif strategy in ('edmentum_matching', 'edmentum_matching_pairs') and not EDMENTUM_RENDERER_AVAILABLE:
                 for i, answer_spec in enumerate(answer_structure):
                     answer_id = answer_spec.get("id", f"matching_pair_{i+1}")
                     skeleton = self._create_edmentum_matching_skeleton(i + 1, answer_id)
                     self.skeleton_frames[answer_id] = skeleton
-            elif strategy == 'edmentum_hot_text':
+            elif strategy == 'edmentum_hot_text' and not EDMENTUM_RENDERER_AVAILABLE:
                 for i, answer_spec in enumerate(answer_structure):
                     answer_id = answer_spec.get("id", f"hot_text_{i+1}")
                     skeleton = self._create_edmentum_hottext_skeleton(i + 1, answer_id)
                     self.skeleton_frames[answer_id] = skeleton
             else:
+                # Generic fallback for unsupported types or when renderer unavailable
                 for answer_spec in answer_structure:
                     answer_type = answer_spec.get("type", "generic")
                     answer_id = answer_spec.get("id", f"skeleton_{len(self.skeleton_frames)}")
@@ -4377,6 +4379,26 @@ If any part of the question or an answer involves a numeric value that you canno
                     match = pair_data.get("match", "")
                     self.edmentum_component.update_pair_data(index, term=term, match=match)
                     print(f"   ✓ Updated pair {index} seamlessly")
+
+                elif content_type == "dropdown_choice":
+                    selected_text = answer_item.get("selected_text", answer_item.get("text_content", ""))
+                    confidence = answer_item.get("confidence", 0.0)
+                    self.edmentum_component.update_dropdown_value(index, selected_text=selected_text, confidence=confidence)
+                    print(f"   ✓ Updated dropdown {index} seamlessly")
+
+                elif content_type == "direct_answer":
+                    # For fill-in-the-blank questions
+                    value = answer_item.get("text_content", "")
+                    confidence = answer_item.get("confidence", 0.0)
+                    self.edmentum_component.update_blank_value(index, value=value, confidence=confidence)
+                    print(f"   ✓ Updated blank {index} seamlessly")
+
+                elif content_type == "text_selection":
+                    # For hot text questions - collect all selections and update
+                    selections = answer_item.get("selected_texts", [])
+                    if isinstance(selections, list):
+                        self.edmentum_component.update_selections(selections)
+                        print(f"   ✓ Updated hot text selections seamlessly")
 
                 # Auto-scroll as answers stream in
                 if not hasattr(self, '_scroll_pending') or not self._scroll_pending:
