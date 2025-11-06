@@ -44,7 +44,8 @@ try:
         EdmentumQuestionRenderer,
         EdmentumMultipleChoice,
         EdmentumMatchedPairs,
-        EdmentumHotText
+        EdmentumHotText,
+        EdmentumOrdering
     )
     EDMENTUM_RENDERER_AVAILABLE = True
 except ImportError as e:
@@ -4320,6 +4321,42 @@ If any part of the question or an answer involves a numeric value that you canno
             print(f"📝 Created EdmentumFillBlank with {len(placeholders)} blank(s)")
             print(f"   Mapped IDs: {list(self.answer_index_map.keys())}")
 
+        elif strategy == 'edmentum_ordering' and EDMENTUM_RENDERER_AVAILABLE:
+            # Ordering/sequence questions - create component with placeholder items
+            # There's typically one ordered_sequence answer with sequence_data
+            # Create placeholder items ["Loading...", "Loading...", ...]
+
+            # Determine number of items from answer_structure
+            num_items = len(answer_structure) if answer_structure else 3  # Default to 3 if unknown
+
+            # Create placeholder sequence data
+            placeholder_items = ["Loading..." for _ in range(num_items)]
+            placeholder_sequence_data = {
+                'items': placeholder_items,
+                'prompt_text': 'Arranging items...'
+            }
+
+            # Create EdmentumOrdering component
+            from edmentum_components import EdmentumOrdering
+            component = EdmentumOrdering(
+                self.progressive_answers_container,
+                question_text,
+                placeholder_sequence_data
+            )
+            self.edmentum_component = component
+
+            # Store answer_id -> index mapping (usually just one: sequence_1 -> 0)
+            self.answer_index_map = {}
+            if answer_structure:
+                for i, answer_spec in enumerate(answer_structure):
+                    answer_id = answer_spec.get("id", f"sequence_{i+1}")
+                    self.answer_index_map[answer_id] = i
+            else:
+                # Default mapping
+                self.answer_index_map['sequence_1'] = 0
+
+            print(f"📊 Created EdmentumOrdering with {num_items} placeholder item(s)")
+
         else:
             # Fallback: Use old skeleton approach ONLY when Edmentum components unavailable
             # This prevents dual-rendering where both component AND skeleton appear together
@@ -4472,6 +4509,14 @@ If any part of the question or an answer involves a numeric value that you canno
                     if isinstance(selections, list):
                         self.edmentum_component.update_selections(selections)
                         print(f"   ✓ Updated hot text selections seamlessly")
+
+                elif content_type == "ordered_sequence":
+                    # For ordering questions - update sequence items
+                    sequence_data = answer_item.get("sequence_data", {})
+                    items = sequence_data.get("items", [])
+                    prompt_text = sequence_data.get("prompt_text", "")
+                    self.edmentum_component.update_sequence(items=items, prompt_text=prompt_text)
+                    print(f"   ✓ Updated ordering sequence with {len(items)} item(s) seamlessly")
 
         # Check for hot spot answers - collect for batch processing
         if hasattr(self, 'hot_spot_pending') and self.hot_spot_pending:

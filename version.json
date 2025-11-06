@@ -1,7 +1,25 @@
 {
-  "version": "1.0.45",
+  "version": "1.0.46",
   "release_date": "2025-11-02",
   "changelog": [
+    {
+      "version": "1.0.46",
+      "date": "2025-11-02",
+      "changes": [
+        "CRITICAL FIX: Order/sequence questions now render with proper Edmentum styling!",
+        "CRITICAL FIX: No more missing answers for ordering questions",
+        "NEW: Created EdmentumOrdering component with numbered list display",
+        "NEW: Added edmentum_ordering skeleton creation with placeholder items",
+        "NEW: Added streaming update support via update_sequence() method",
+        "NEW: Added _render_ordering() method to EdmentumQuestionRenderer",
+        "NEW: Added routing for edmentum_ordering strategy",
+        "UX: Numbered list with blue circular badges (1, 2, 3...)",
+        "UX: Optional prompt text display with 📋 icon",
+        "UX: Green '✓ Correct Order' indicator",
+        "UX: Consistent styling with light gray container and blue border",
+        "FIX: Seamless streaming updates - no more ugly green containers for order questions"
+      ]
+    },
     {
       "version": "1.0.45",
       "date": "2025-11-02",

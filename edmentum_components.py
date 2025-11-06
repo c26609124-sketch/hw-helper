@@ -919,6 +919,128 @@ class EdmentumFillBlank(EdmentumComponent):
 
 
 # ============================================================================
+# ORDERING/SEQUENCE COMPONENT
+# ============================================================================
+
+class EdmentumOrdering(EdmentumComponent):
+    """
+    Ordering/sequence question - displays numbered list of items in correct order
+    """
+
+    def __init__(self, parent, question_text: str, sequence_data: Dict):
+        """
+        Args:
+            parent: Parent widget
+            question_text: Question text (e.g., "Arrange the following in order...")
+            sequence_data: Dict with 'items' (list of ordered items) and optional 'prompt_text'
+        """
+        super().__init__(parent)
+        self.question_text = question_text
+        self.sequence_data = sequence_data
+        self.items = sequence_data.get('items', [])
+        self.prompt_text = sequence_data.get('prompt_text', '')
+        self.item_labels = []  # Store label widgets for streaming updates
+
+        self._build_ui()
+
+    def _build_ui(self):
+        """Build the ordering interface with numbered list"""
+        content_frame = ctk.CTkFrame(self.parent, fg_color="transparent")
+        content_frame.pack(fill="x", pady=10)
+
+        # Optional prompt text
+        if self.prompt_text:
+            prompt_label = ctk.CTkLabel(
+                content_frame,
+                text=f"📋 {self.prompt_text}",
+                font=(EDMENTUM_STYLES['font_family'], EDMENTUM_STYLES['font_size_question'], "italic"),
+                text_color=self.get_color('gray_dark'),
+                wraplength=700,
+                justify="left",
+                anchor="w"
+            )
+            prompt_label.pack(fill="x", padx=10, pady=(0, 10))
+
+        # Numbered list container
+        list_container = ctk.CTkFrame(
+            content_frame,
+            fg_color=self.get_color('bg_secondary'),
+            corner_radius=EDMENTUM_STYLES['border_radius'],
+            border_width=EDMENTUM_STYLES['border_width'],
+            border_color=self.get_color('blue_border')
+        )
+        list_container.pack(fill="x", padx=10)
+
+        # Render each item with number
+        for i, item in enumerate(self.items):
+            item_frame = ctk.CTkFrame(
+                list_container,
+                fg_color="transparent"
+            )
+            item_frame.pack(fill="x", padx=15, pady=8)
+
+            # Number badge (circular)
+            number_label = ctk.CTkLabel(
+                item_frame,
+                text=str(i + 1),
+                font=(EDMENTUM_STYLES['font_family'], EDMENTUM_STYLES['font_size_option'], "bold"),
+                text_color="white",
+                fg_color=EDMENTUM_STYLES['blue_primary'],
+                corner_radius=12,
+                width=24,
+                height=24
+            )
+            number_label.pack(side="left", padx=(0, 12))
+
+            # Item text
+            item_label = ctk.CTkLabel(
+                item_frame,
+                text=str(item),
+                font=(EDMENTUM_STYLES['font_family'], EDMENTUM_STYLES['font_size_option']),
+                text_color=self.get_color('gray_dark'),
+                wraplength=620,
+                justify="left",
+                anchor="w"
+            )
+            item_label.pack(side="left", fill="x", expand=True)
+
+            # Store reference for updates
+            self.item_labels.append(item_label)
+
+        # Correct order indicator
+        check_frame = ctk.CTkFrame(content_frame, fg_color="transparent")
+        check_frame.pack(fill="x", padx=10, pady=(5, 0))
+
+        check_label = ctk.CTkLabel(
+            check_frame,
+            text="✓ Correct Order",
+            font=(EDMENTUM_STYLES['font_family'], EDMENTUM_STYLES['font_size_small'], "bold"),
+            text_color=EDMENTUM_STYLES['green_correct']
+        )
+        check_label.pack(side="left")
+
+    def update_sequence(self, items: List[str] = None, prompt_text: str = None):
+        """
+        Update the sequence items in-place during streaming (no widget recreation)
+
+        Args:
+            items: New list of ordered items
+            prompt_text: New prompt text (optional)
+        """
+        if items is not None:
+            self.items = items
+            # Update each item label
+            for i, item in enumerate(items):
+                if i < len(self.item_labels):
+                    label = self.item_labels[i]
+                    if label.winfo_exists():
+                        label.configure(text=str(item))
+
+        if prompt_text is not None:
+            self.prompt_text = prompt_text
+
+
+# ============================================================================
 # HOT TEXT COMPONENT
 # ============================================================================
 
@@ -1262,6 +1384,8 @@ class EdmentumQuestionRenderer:
                 return self._render_dropdown(parent, question_text, answers)
             elif strategy == 'edmentum_fill_blank':
                 return self._render_fill_blank(parent, question_text, answers)
+            elif strategy == 'edmentum_ordering':
+                return self._render_ordering(parent, question_text, answers)
             elif strategy == 'standard_fallback':
                 return False  # Let standard display handle it
             else:
@@ -1333,6 +1457,45 @@ class EdmentumQuestionRenderer:
 
         except Exception as e:
             print(f"❌ Fill-in-the-blank rendering failed: {e}")
+            return False
+
+    def _render_ordering(self, parent, question_text: str, answers: list) -> bool:
+        """
+        Render ordering/sequence questions with numbered list
+
+        Args:
+            parent: Parent widget for answer display
+            question_text: Question text (e.g., "Arrange in chronological order...")
+            answers: List of answer dicts with ordered_sequence content_type
+
+        Returns:
+            True if rendering succeeded, False otherwise
+        """
+        try:
+            # Extract ordered_sequence answer (usually just one)
+            sequence_data = None
+            for answer in answers:
+                if answer.get('content_type') == 'ordered_sequence':
+                    sequence_data = answer.get('sequence_data', {})
+                    break
+
+            if not sequence_data:
+                print("⚠️ No ordered_sequence answer found")
+                return False
+
+            items = sequence_data.get('items', [])
+            if not items:
+                print("⚠️ Ordered sequence has no items")
+                return False
+
+            print(f"📊 Rendering ordering question with {len(items)} item(s)")
+
+            # Create EdmentumOrdering component
+            EdmentumOrdering(parent, question_text, sequence_data)
+            return True
+
+        except Exception as e:
+            print(f"❌ Ordering rendering failed: {e}")
             return False
 
     def _render_hot_spot(self, parent, question_text: str, answers: list, ui_instance=None) -> bool:
