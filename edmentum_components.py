@@ -1260,6 +1260,8 @@ class EdmentumQuestionRenderer:
                 return self._render_multiple_response(parent, question_text, answers)
             elif strategy == 'edmentum_dropdown':
                 return self._render_dropdown(parent, question_text, answers)
+            elif strategy == 'edmentum_fill_blank':
+                return self._render_fill_blank(parent, question_text, answers)
             elif strategy == 'standard_fallback':
                 return False  # Let standard display handle it
             else:
@@ -1294,6 +1296,43 @@ class EdmentumQuestionRenderer:
 
         except Exception as e:
             print(f"❌ Hot text rendering failed: {e}")
+            return False
+
+    def _render_fill_blank(self, parent, question_text: str, answers: list) -> bool:
+        """
+        Render fill-in-the-blank questions with inline input boxes
+
+        Args:
+            parent: Parent widget for answer display
+            question_text: Question text with {{placeholder}} markers
+            answers: List of answer dicts with direct_answer content_type
+
+        Returns:
+            True if rendering succeeded, False otherwise
+        """
+        try:
+            # Create blanks data from answers
+            blanks = []
+            for answer in answers:
+                if answer.get('content_type') == 'direct_answer':
+                    blanks.append({
+                        'answer_id': answer.get('answer_id', ''),
+                        'text_content': answer.get('text_content', ''),
+                        'confidence': answer.get('confidence', 0.0)
+                    })
+
+            if not blanks:
+                print("⚠️ No fill-in-the-blank answers found")
+                return False
+
+            print(f"📝 Rendering {len(blanks)} fill-in-the-blank answer(s)")
+
+            # Create EdmentumFillBlank component
+            EdmentumFillBlank(parent, question_text, blanks)
+            return True
+
+        except Exception as e:
+            print(f"❌ Fill-in-the-blank rendering failed: {e}")
             return False
 
     def _render_hot_spot(self, parent, question_text: str, answers: list, ui_instance=None) -> bool:

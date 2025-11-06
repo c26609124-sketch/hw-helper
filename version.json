@@ -1,7 +1,22 @@
 {
-  "version": "1.0.43",
+  "version": "1.0.44",
   "release_date": "2025-11-02",
   "changelog": [
+    {
+      "version": "1.0.44",
+      "date": "2025-11-02",
+      "changes": [
+        "CRITICAL FIX: Fill-in-the-blank questions now render correctly!",
+        "CRITICAL FIX: Correct blank count (parses {{placeholders}} instead of metadata length)",
+        "CRITICAL FIX: No more extra skeleton frames or stuck 'Loading...' placeholders",
+        "NEW: Added edmentum_fill_blank skeleton creation with regex placeholder parsing",
+        "NEW: Added _render_fill_blank() method to EdmentumQuestionRenderer",
+        "FIX: Fill-blank routing added to render_question() method",
+        "FIX: Blanks update in real-time during streaming via update_blank_value()",
+        "UPDATE: Uses re.findall() to count actual {{placeholders}} in question_text",
+        "UX: Proper EdmentumFillBlank component with inline input boxes and underline styling"
+      ]
+    },
     {
       "version": "1.0.43",
       "date": "2025-11-02",

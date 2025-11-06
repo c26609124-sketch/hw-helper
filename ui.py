@@ -4276,6 +4276,37 @@ If any part of the question or an answer involves a numeric value that you canno
             self.hot_spot_answers = []
             print(f"🎯 Hot spot question detected - will annotate screenshot after streaming")
 
+        elif strategy == 'edmentum_fill_blank' and EDMENTUM_RENDERER_AVAILABLE:
+            # Fill-in-the-blank questions - create component with placeholder blanks
+            # Parse question_text to find {{placeholders}} - this is the accurate blank count
+            placeholder_pattern = r'\{\{([^}]+)\}\}'
+            placeholders = re.findall(placeholder_pattern, question_text)
+
+            # Create blank data with "???" placeholders
+            placeholder_blanks = []
+            for i, placeholder_id in enumerate(placeholders):
+                placeholder_blanks.append({
+                    'answer_id': placeholder_id,
+                    'text_content': '???',
+                    'confidence': 0.0
+                })
+
+            # Create EdmentumFillBlank component
+            from edmentum_components import EdmentumFillBlank
+            component = EdmentumFillBlank(
+                self.progressive_answers_container,
+                question_text,
+                placeholder_blanks
+            )
+            self.edmentum_component = component
+
+            # Store answer_id -> index mapping for updates
+            self.answer_index_map = {}
+            for i, placeholder_id in enumerate(placeholders):
+                self.answer_index_map[placeholder_id] = i
+
+            print(f"📝 Created EdmentumFillBlank with {len(placeholders)} blank(s)")
+
         else:
             # Fallback: Use old skeleton approach ONLY when Edmentum components unavailable
             # This prevents dual-rendering where both component AND skeleton appear together
