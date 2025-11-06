@@ -4916,6 +4916,19 @@ If any part of the question or an answer involves a numeric value that you canno
                     print(f"   🔄 Filling remaining skeleton: {answer_id}")
                     self._replace_skeleton_with_answer(answer_id, answer)
 
+        # CRITICAL FIX: Fill any remaining Edmentum component placeholders
+        # When using seamless streaming (v1.0.35+), we use answer_index_map instead of skeleton_frames
+        # The last answer often doesn't arrive before [DONE], so we need to fill it here
+        if hasattr(self, 'edmentum_component') and hasattr(self, 'answer_index_map'):
+            answers_list = processed_data.get('answers', [])
+            for answer in answers_list:
+                answer_id = answer.get('answer_id', '')
+                if answer_id in self.answer_index_map:
+                    # Always update (idempotent - safe to call multiple times)
+                    # This ensures ALL placeholders are filled, especially the last one
+                    print(f"   🔄 Ensuring component item filled: {answer_id}")
+                    self._replace_skeleton_with_answer(answer_id, answer)
+
         # VALIDATION: Validate and auto-fix response before rendering
         if RESPONSE_VALIDATOR_AVAILABLE:
             print("🔍 Validating response...")

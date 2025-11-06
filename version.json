@@ -1,7 +1,19 @@
 {
-  "version": "1.0.41",
+  "version": "1.0.42",
   "release_date": "2025-11-02",
   "changelog": [
+    {
+      "version": "1.0.42",
+      "date": "2025-11-02",
+      "changes": [
+        "CRITICAL FIX: Last term/answer now loads correctly every time!",
+        "CRITICAL FIX: Added finalization pass for Edmentum component placeholders",
+        "FIX: All answer_index_map items filled during finalization (not just skeleton_frames)",
+        "FIX: Handles cases where last answer doesn't arrive before stream ends",
+        "UPDATE: Idempotent update calls ensure ALL placeholders filled",
+        "UX: No more stuck 'Loading term...' on the last item"
+      ]
+    },
     {
       "version": "1.0.41",
       "date": "2025-11-02",
