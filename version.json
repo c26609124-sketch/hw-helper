@@ -1,7 +1,23 @@
 {
-  "version": "1.0.42",
+  "version": "1.0.43",
   "release_date": "2025-11-02",
   "changelog": [
+    {
+      "version": "1.0.43",
+      "date": "2025-11-02",
+      "changes": [
+        "CRITICAL FIX: Hot spot questions now render with bounding boxes!",
+        "CRITICAL FIX: No more ugly green containers for 'Which organisms...' questions",
+        "NEW: Hot spot streaming collection during answer arrival",
+        "NEW: Finalization triggers screenshot annotation with OCR + AI coordinates",
+        "FIX: Added edmentum_hot_spot to skeleton creation (collects metadata)",
+        "FIX: Added hot_spot streaming handler (collects answers for batch processing)",
+        "FIX: Hot spot finalization creates EdmentumHotSpot + annotates screenshot",
+        "UPDATE: Green bounding boxes drawn on screenshot via OCR detection",
+        "UPDATE: Fallback to AI percentage coordinates if OCR fails",
+        "UX: Proper Edmentum hot spot design with visual bounding boxes"
+      ]
+    },
     {
       "version": "1.0.42",
       "date": "2025-11-02",

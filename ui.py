@@ -4268,6 +4268,14 @@ If any part of the question or an answer involves a numeric value that you canno
                     variant_id = base_id.replace("match_pair", "matching_pair")
                     self.answer_index_map[variant_id] = i
 
+        elif strategy == 'edmentum_hot_spot' and EDMENTUM_RENDERER_AVAILABLE:
+            # Hot spot questions - collect answers during streaming and annotate screenshot when complete
+            # Store metadata for finalization (actual rendering happens after all answers collected)
+            self.hot_spot_pending = True
+            self.hot_spot_question = question_text
+            self.hot_spot_answers = []
+            print(f"🎯 Hot spot question detected - will annotate screenshot after streaming")
+
         else:
             # Fallback: Use old skeleton approach ONLY when Edmentum components unavailable
             # This prevents dual-rendering where both component AND skeleton appear together
@@ -4419,11 +4427,26 @@ If any part of the question or an answer involves a numeric value that you canno
                         self.edmentum_component.update_selections(selections)
                         print(f"   ✓ Updated hot text selections seamlessly")
 
+        # Check for hot spot answers - collect for batch processing
+        if hasattr(self, 'hot_spot_pending') and self.hot_spot_pending:
+            content_type = answer_item.get("content_type", "")
+            if content_type == "hot_spot":
+                # Collect hot spot answers - will be processed in finalization
+                self.hot_spot_answers.append(answer_item)
+                print(f"   ✓ Collected hot spot answer: {answer_item.get('text_content', 'N/A')}")
+
                 # Auto-scroll as answers stream in
                 if not hasattr(self, '_scroll_pending') or not self._scroll_pending:
                     self._scroll_pending = True
                     self.after(300, self._debounced_scroll)
                 return
+
+        # Auto-scroll as answers stream in
+        if hasattr(self, 'edmentum_component'):
+            if not hasattr(self, '_scroll_pending') or not self._scroll_pending:
+                self._scroll_pending = True
+                self.after(300, self._debounced_scroll)
+            return
 
         # OLD APPROACH: Fallback to skeleton frame updates for unsupported types
         if answer_id not in self.skeleton_frames:
@@ -4928,6 +4951,37 @@ If any part of the question or an answer involves a numeric value that you canno
                     # This ensures ALL placeholders are filled, especially the last one
                     print(f"   🔄 Ensuring component item filled: {answer_id}")
                     self._replace_skeleton_with_answer(answer_id, answer)
+
+        # CRITICAL FIX: Process hot spot questions after all answers collected
+        if hasattr(self, 'hot_spot_answers') and self.hot_spot_answers:
+            print(f"🎯 Processing {len(self.hot_spot_answers)} hot spot answers...")
+
+            # Create EdmentumHotSpot component
+            if EDMENTUM_RENDERER_AVAILABLE:
+                from edmentum_components import EdmentumHotSpot
+                question_text = getattr(self, 'hot_spot_question', 'Select the correct locations')
+
+                # Create component in progressive_answers_container
+                EdmentumHotSpot(
+                    self.progressive_answers_container,
+                    question_text,
+                    self.hot_spot_answers
+                )
+
+                # Annotate screenshot with bounding boxes
+                annotated_path = self._annotate_screenshot_with_boxes(self.hot_spot_answers)
+                if annotated_path and hasattr(self, '_update_screenshot_from_path'):
+                    self._update_screenshot_from_path(annotated_path)
+                    print("✅ Hot spot rendering complete with bounding boxes")
+                else:
+                    print("⚠️ Screenshot annotation failed, showing text answers only")
+
+            # Clean up
+            del self.hot_spot_answers
+            if hasattr(self, 'hot_spot_pending'):
+                del self.hot_spot_pending
+            if hasattr(self, 'hot_spot_question'):
+                del self.hot_spot_question
 
         # VALIDATION: Validate and auto-fix response before rendering
         if RESPONSE_VALIDATOR_AVAILABLE:
