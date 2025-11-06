@@ -732,6 +732,11 @@ def get_openrouter_response_streaming(api_key: str, model_name: str, image_base6
         print("⚡ Streaming started, waiting for first token...")
 
         for chunk in response.iter_content(chunk_size=1024, decode_unicode=True):
+            # Check for cancellation
+            if hasattr(self, 'ai_cancelled') and self.ai_cancelled.is_set():
+                print("🛑 AI streaming cancelled by user")
+                return {"status": "CANCELLED", "error_message": "Cancelled by user"}
+
             if not chunk:
                 continue
 
@@ -1301,6 +1306,10 @@ class HomeworkApp(ctk.CTk):
         # Capture thread management
         self.capture_thread = None
         self.capture_cancelled = threading.Event()
+
+        # AI processing thread management
+        self.ai_thread = None
+        self.ai_cancelled = threading.Event()
 
         # Load button icons for workflow buttons
         self.button_capture_icon = IconManager.load_button_icon('button-capture.png', size=(20, 20))
@@ -2441,6 +2450,22 @@ class HomeworkApp(ctk.CTk):
 
         self._update_answer_textbox("Capture cancelled by user.", placeholder=False)
 
+    def cancel_ai(self):
+        """Cancel the currently running AI processing"""
+        print("🛑 Cancelling AI processing...")
+        self.ai_cancelled.set()
+
+        # Transform Cancel button back to Get AI Answer button
+        self.ai_button.configure(
+            text="Get AI Answer",
+            fg_color="#2ECC71",
+            hover_color="#27AE60",
+            command=self.start_ai_thread,
+            state="normal"
+        )
+
+        self._update_answer_textbox("AI processing cancelled by user.", placeholder=False)
+
     def _run_capture_task_in_thread(self, task_function):
         capture_result_data = None
         try:
@@ -3164,6 +3189,9 @@ class HomeworkApp(ctk.CTk):
 
 
     def start_ai_thread(self):
+        # Clear cancellation flag
+        self.ai_cancelled.clear()
+
         if not self.current_image_path or not os.path.exists(self.current_image_path) or (hasattr(self.screenshot_image_label, 'image') and self.screenshot_image_label.image is None): self._update_answer_textbox("Please capture or re-crop a valid image first.", False); return # type: ignore
         api_key = self.api_key_var.get()
         selected_display_name = self.selected_model_var.get()
@@ -3176,8 +3204,15 @@ class HomeworkApp(ctk.CTk):
             self._update_answer_textbox(f"Error: Selected model '{selected_model}' invalid. Choose suitable model.", False)
             if current_default and current_default in AVAILABLE_MODELS: self.selected_model_var.set(current_default); selected_model = current_default
             else: self.ai_button.configure(state="disabled", text="AI Model Invalid"); return
-        # PHASE 1: Initialize progressive display
-        self.ai_button.configure(state="disabled", text="⚡ Initializing...")
+
+        # PHASE 1: Transform AI button into Cancel button
+        self.ai_button.configure(
+            text="✖ Cancel AI",
+            fg_color="#FF6B6B",
+            hover_color="#EE5A5A",
+            command=self.cancel_ai,
+            state="normal"
+        )
         self._clear_answers()
 
         # Initialize progressive parser
@@ -3812,11 +3847,11 @@ When you encounter a question item in the image:
 4.  **Crucially, do NOT assume that just because `dd_ctx_` variables are present in the textual prompt, they must be used or that they apply to any arbitrary question part.** For instance, if Part A of the question in the image shows a simple blank line for a short text answer (a typical fill-in-the-blank), you MUST NOT attempt to answer it using `content_type: 'dropdown_choice'` or force `dd_ctx_` data onto it. Your primary guide for identifying a question element as a dropdown and applying `dd_ctx_` data is the **visual evidence in the image for that specific item**, followed by a careful matching to any relevant textual options provided. Radio buttons or checkboxes are NOT to be treated as dropdowns under this logic; use multiple-choice instructions for them.
 
 If it is an **open-ended question OR a fill-in-the-blank question** (that is NOT the special equation format or a dropdown handled above):
-- **'identified_question'**: The FULL original sentence or question context, explicitly using unique placeholders like `{{part_A_blank_1}}`, `{{part_A_blank_2}}`, etc., for EACH blank, will be part of the concatenated 'identified_question' as per the main multi-part instruction. If the question implies a calculation you cannot perform (e.g., 'use spreadsheet'), but the answer value is explicitly stated or shown in a table within the image, use that visible value for the 'text_content'.
+- **'identified_question'**: The FULL original sentence or question context. **CRITICAL**: For fill-in-the-blank questions, you MUST include `{{placeholder}}` markers in the exact positions where blanks appear. Use unique placeholders like `{{blank_1}}`, `{{blank_2}}`, etc. Example: "The {{blank_1}} is the capital of {{blank_2}}." NOT "The ___ is the capital of ___" or "What is the capital?" - you MUST include the {{markers}}. This is essential for proper inline blank display. If the question implies a calculation you cannot perform (e.g., 'use spreadsheet'), but the answer value is explicitly stated or shown in a table within the image, use that visible value for the 'text_content'.
 - For **each individual blank** identified by a placeholder in 'identified_question', create a **separate item** in the 'answers' array.
 - Each such item must have:
     - 'content_type': 'direct_answer'.
-    - 'answer_id': This MUST EXACTLY MATCH the placeholder used in 'identified_question' (e.g., "part_A_blank_1", "part_A_blank_2").
+    - 'answer_id': This MUST EXACTLY MATCH the placeholder used in 'identified_question' (e.g., "blank_1", "blank_2" if you used {{blank_1}}, {{blank_2}}).
     - 'text_content': Your answer for that specific blank.
     - 'is_correct_option': true (as it's a direct answer you are providing).
     - 'confidence': Your confidence in this answer for the blank.
@@ -3848,7 +3883,19 @@ If any part of the question or an answer involves a numeric value that you canno
     def _call_ai_api_thread_target(self, api_key, model_name, image_path, prompt):
         start_time = time.time()
         print(f"🤖 Starting AI analysis...")
-        
+
+        # Check for cancellation before starting
+        if self.ai_cancelled.is_set():
+            print("🛑 AI processing cancelled before execution")
+            self.after(0, lambda: self.ai_button.configure(
+                text="Get AI Answer",
+                fg_color="#2ECC71",
+                hover_color="#27AE60",
+                command=self.start_ai_thread,
+                state="normal"
+            ))
+            return
+
         # Pre-encode image with cache validation
         # CRITICAL: Validate cache is for the CORRECT image to prevent answer contamination
         if self.current_image_base64 and self.current_image_base64_path == image_path:
@@ -4279,9 +4326,25 @@ If any part of the question or an answer involves a numeric value that you canno
 
         elif strategy == 'edmentum_fill_blank' and EDMENTUM_RENDERER_AVAILABLE:
             # Fill-in-the-blank questions - create component with placeholder blanks
-            # Parse question_text to find {{placeholders}} - this is the accurate blank count
+            # CRITICAL FIX: Reconstruct question_text with {{placeholders}} if missing
             placeholder_pattern = r'\{\{([^}]+)\}\}'
             placeholders = re.findall(placeholder_pattern, question_text)
+
+            # If no placeholders found in question_text, reconstruct from answer_structure
+            if not placeholders and answer_structure:
+                print("⚠️ Question text missing {{placeholders}}, reconstructing...")
+                # Extract answer IDs from answer_structure to use as placeholders
+                for i, answer_spec in enumerate(answer_structure):
+                    answer_id = answer_spec.get("id", f"blank_{i+1}")
+                    # Clean up the ID to use as placeholder
+                    clean_id = answer_id.replace('fill_blank_', 'blank_').replace('fillblank_', 'blank_')
+                    placeholders.append(clean_id)
+
+                # Append placeholder markers to question text for inline display
+                # Format: "Question text  _____  _____  _____" (inline blanks)
+                blank_markers = '  '.join([f'{{{{{{placeholder}}}}}}}' for placeholder in placeholders])
+                question_text = f"{question_text}\n\n{blank_markers}"
+                print(f"   Reconstructed with {len(placeholders)} placeholder(s)")
 
             # Create blank data with "???" placeholders
             placeholder_blanks = []
@@ -4356,6 +4419,16 @@ If any part of the question or an answer involves a numeric value that you canno
                 self.answer_index_map['sequence_1'] = 0
 
             print(f"📊 Created EdmentumOrdering with {num_items} placeholder item(s)")
+
+        elif strategy == 'edmentum_hot_text' and EDMENTUM_RENDERER_AVAILABLE:
+            # Hot text / text selection questions - collect selections during streaming
+            # Render full passage with highlighted text after all selections collected
+            self.hot_text_pending = True
+            self.hot_text_question = question_text
+            self.hot_text_passage = question_text  # Passage is embedded in question text
+            self.hot_text_selections = []
+
+            print(f"📖 Hot text question detected - will render passage with highlights after streaming")
 
         else:
             # Fallback: Use old skeleton approach ONLY when Edmentum components unavailable
@@ -4517,6 +4590,17 @@ If any part of the question or an answer involves a numeric value that you canno
                     prompt_text = sequence_data.get("prompt_text", "")
                     self.edmentum_component.update_sequence(items=items, prompt_text=prompt_text)
                     print(f"   ✓ Updated ordering sequence with {len(items)} item(s) seamlessly")
+
+        # Check for text selection answers - collect for batch processing
+        if hasattr(self, 'hot_text_pending') and self.hot_text_pending:
+            content_type = answer_item.get("content_type", "")
+            if content_type == "text_selection":
+                # Collect text selections for batch rendering
+                text_content = answer_item.get("text_content", "")
+                if text_content:
+                    self.hot_text_selections.append(text_content)
+                    print(f"   ✓ Collected text selection: {text_content[:60]}...")
+                return
 
         # Check for hot spot answers - collect for batch processing
         if hasattr(self, 'hot_spot_pending') and self.hot_spot_pending:
@@ -5074,6 +5158,34 @@ If any part of the question or an answer involves a numeric value that you canno
             if hasattr(self, 'hot_spot_question'):
                 del self.hot_spot_question
 
+        # CRITICAL FIX: Process hot text questions after all selections collected
+        if hasattr(self, 'hot_text_selections') and self.hot_text_selections:
+            print(f"📖 Processing {len(self.hot_text_selections)} text selection(s)...")
+
+            # Create EdmentumHotText component
+            if EDMENTUM_RENDERER_AVAILABLE:
+                from edmentum_components import EdmentumHotText
+                question_text = getattr(self, 'hot_text_question', 'Select the correct text from the passage')
+                passage = getattr(self, 'hot_text_passage', question_text)
+
+                # Create component in progressive_answers_container
+                EdmentumHotText(
+                    self.progressive_answers_container,
+                    question_text,
+                    passage,
+                    self.hot_text_selections
+                )
+                print("✅ Hot text rendering complete with highlighted passages")
+
+            # Clean up
+            del self.hot_text_selections
+            if hasattr(self, 'hot_text_pending'):
+                del self.hot_text_pending
+            if hasattr(self, 'hot_text_question'):
+                del self.hot_text_question
+            if hasattr(self, 'hot_text_passage'):
+                del self.hot_text_passage
+
         # VALIDATION: Validate and auto-fix response before rendering
         if RESPONSE_VALIDATOR_AVAILABLE:
             print("🔍 Validating response...")
@@ -5104,7 +5216,14 @@ If any part of the question or an answer involves a numeric value that you canno
             success = self._render_edmentum_question(analysis, processed_data)
             if success:
                 print("✓ Edmentum rendering successful")
-                self.ai_button.configure(state="normal", text="Get AI Answer")
+                # Transform Cancel button back to Get AI Answer button
+                self.ai_button.configure(
+                    text="Get AI Answer",
+                    fg_color="#2ECC71",
+                    hover_color="#27AE60",
+                    command=self.start_ai_thread,
+                    state="normal"
+                )
                 # Auto-scroll to answers
                 self.after(200, self._auto_scroll_to_answers)
                 return
@@ -5116,7 +5235,15 @@ If any part of the question or an answer involves a numeric value that you canno
 
         # Standard display (fallback)
         self.display_ai_answers(processed_data)
-        self.ai_button.configure(state="normal", text="Get AI Answer")
+
+        # Transform Cancel button back to Get AI Answer button
+        self.ai_button.configure(
+            text="Get AI Answer",
+            fg_color="#2ECC71",
+            hover_color="#27AE60",
+            command=self.start_ai_thread,
+            state="normal"
+        )
 
         # Auto-scroll to answers
         self.after(200, self._auto_scroll_to_answers)

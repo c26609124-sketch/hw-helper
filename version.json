@@ -1,7 +1,28 @@
 {
-  "version": "1.0.46",
+  "version": "1.0.47",
   "release_date": "2025-11-02",
   "changelog": [
+    {
+      "version": "1.0.47",
+      "date": "2025-11-02",
+      "changes": [
+        "CRITICAL FIX: Hot text (text selection) questions now render properly!",
+        "CRITICAL FIX: Fill-in-the-blank questions now show inline blanks with surrounding text!",
+        "CRITICAL FIX: AI Answer button now cancellable during processing",
+        "NEW: Hot text streaming support - collects text selections and renders passage with green highlights",
+        "NEW: Hot text finalization renders EdmentumHotText with full passage display",
+        "NEW: Fill-blank placeholder reconstruction - adds {{markers}} if missing from AI response",
+        "NEW: AI prompt updated to REQUIRE {{placeholder}} markers in identified_question",
+        "NEW: AI cancellation support - button transforms to '✖ Cancel AI' (red) during processing",
+        "NEW: Cancellation checks in streaming loop - immediate API stream termination",
+        "FIX: Hot text now shows passage in bordered container with highlighted correct excerpts",
+        "FIX: Fill-blanks now display 'The **answer** is correct' instead of 'Blank 1: answer'",
+        "FIX: AI button cleanup in all finalization paths (Edmentum + standard fallback)",
+        "UX: Text selection passages displayed with proper formatting and green highlighting",
+        "UX: Inline blank display matches actual Edmentum site format",
+        "UX: Cancel AI button provides instant user control over long-running queries"
+      ]
+    },
     {
       "version": "1.0.46",
       "date": "2025-11-02",
