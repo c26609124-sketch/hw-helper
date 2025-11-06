@@ -4342,7 +4342,7 @@ If any part of the question or an answer involves a numeric value that you canno
 
                 # Append placeholder markers to question text for inline display
                 # Format: "Question text  _____  _____  _____" (inline blanks)
-                blank_markers = '  '.join([f'{{{{{{placeholder}}}}}}}' for placeholder in placeholders])
+                blank_markers = '  '.join([f'{{{{{placeholder}}}}}' for placeholder in placeholders])
                 question_text = f"{question_text}\n\n{blank_markers}"
                 print(f"   Reconstructed with {len(placeholders)} placeholder(s)")
 
