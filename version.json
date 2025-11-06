@@ -1,7 +1,20 @@
 {
-  "version": "1.0.44",
+  "version": "1.0.45",
   "release_date": "2025-11-02",
   "changelog": [
+    {
+      "version": "1.0.45",
+      "date": "2025-11-02",
+      "changes": [
+        "CRITICAL FIX: Fill-in-the-blank answer_id matching now works with all AI variations!",
+        "CRITICAL FIX: All 3 blanks now fill correctly (no more 2/3 filled issue)",
+        "FIX: Added fuzzy matching for answer_ids (fill_blank_1, blank_1, fillblank_1, 1)",
+        "FIX: Case-insensitive ID lookup in _replace_skeleton_with_answer()",
+        "FIX: Maps multiple ID variations to same blank index for robust streaming",
+        "DEBUG: Added answer_index_map logging to show all mapped ID variations",
+        "UX: Seamless updates regardless of AI's answer_id format inconsistencies"
+      ]
+    },
     {
       "version": "1.0.44",
       "date": "2025-11-02",

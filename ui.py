@@ -4300,12 +4300,25 @@ If any part of the question or an answer involves a numeric value that you canno
             )
             self.edmentum_component = component
 
-            # Store answer_id -> index mapping for updates
+            # Store answer_id -> index mapping for updates (with fuzzy matching)
+            # The AI might send "fill_blank_1", "blank_1", or just "1"
             self.answer_index_map = {}
             for i, placeholder_id in enumerate(placeholders):
+                # Map the exact placeholder_id
                 self.answer_index_map[placeholder_id] = i
 
+                # Also map common AI variations
+                # If placeholder is "blank_1", also accept "fill_blank_1", "fillblank_1", "1"
+                base_id = placeholder_id.lower().replace('fill_', '').replace('blank_', '').replace('_', '')
+                if base_id.isdigit():
+                    # Map numeric index (1-based from AI)
+                    self.answer_index_map[f"fill_blank_{base_id}"] = i
+                    self.answer_index_map[f"blank_{base_id}"] = i
+                    self.answer_index_map[f"fillblank_{base_id}"] = i
+                    self.answer_index_map[base_id] = i
+
             print(f"📝 Created EdmentumFillBlank with {len(placeholders)} blank(s)")
+            print(f"   Mapped IDs: {list(self.answer_index_map.keys())}")
 
         else:
             # Fallback: Use old skeleton approach ONLY when Edmentum components unavailable
@@ -4420,8 +4433,10 @@ If any part of the question or an answer involves a numeric value that you canno
         """
         # NEW APPROACH: Update Edmentum component directly (seamless streaming)
         if hasattr(self, 'edmentum_component') and hasattr(self, 'answer_index_map'):
-            if answer_id in self.answer_index_map:
-                index = self.answer_index_map[answer_id]
+            # Try exact match first, then case-insensitive
+            lookup_id = answer_id if answer_id in self.answer_index_map else answer_id.lower()
+            if lookup_id in self.answer_index_map:
+                index = self.answer_index_map[lookup_id]
                 content_type = answer_item.get("content_type", "")
 
                 # Update the appropriate component based on type
