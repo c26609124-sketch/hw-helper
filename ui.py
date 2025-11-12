@@ -71,7 +71,7 @@ except ImportError as e:
 # --- slckr API Client ---
 try:
     from lib.api import SlckrAPIClient
-    from lib.utils import export_widget_tree, get_widget_summary
+    from lib.utils import export_widget_tree, get_widget_summary, export_answers_html
     API_CLIENT_AVAILABLE = True
 except ImportError as e:
     print(f"Note: API client not available: {e}")
@@ -142,11 +142,11 @@ def get_edmentum_color(key: str, dark_mode: bool = False) -> str:
 
 # --- Selenium Script Import ---
 try:
-    from selenium_capture_logic import run_brave_screenshot_task
+    from lib.capture import run_brave_screenshot_task
     SELENIUM_SCRIPT_AVAILABLE = True
 except ImportError as e:
     print("***********************************************************************************")
-    print(f"WARNING: Could not import 'selenium_capture_logic.py': {e}")
+    print(f"WARNING: Could not import screenshot capture module: {e}")
     print("The application will run in STUB mode for screenshot capture.")
     print("***********************************************************************************")
     SELENIUM_SCRIPT_AVAILABLE = False
@@ -180,7 +180,7 @@ except ImportError as e:
 class IconManager:
     """Manages loading and caching of icon files"""
 
-    ICON_DIR = Path(__file__).parent / "icons"
+    ICON_DIR = Path(__file__).parent / "assets" / "icons"
 
     # Icon file mappings (emoji -> filename)
     ICON_FILES = {
@@ -299,8 +299,17 @@ class ErrorReporter:
         ai_response_json = None
         if hasattr(app_instance, 'last_ai_response'):
             try:
+                # Export answer display as HTML for report page
+                answer_html = ""
+                if hasattr(app_instance, 'answer_scroll_frame'):
+                    try:
+                        answer_html = export_answers_html(app_instance.answer_scroll_frame)
+                    except Exception as html_err:
+                        answer_html = f"<div class='error'>HTML export failed: {html_err}</div>"
+
                 ai_response_json = {
                     "model": app_instance.selected_model_var.get() if hasattr(app_instance, 'selected_model_var') else None,
+                    "answer_html": answer_html,  # NEW: HTML representation for display
                     "answer_text": app_instance.answer_textbox.get("1.0", "end")[:5000] if hasattr(app_instance, 'answer_textbox') else "",
                     "response_metadata": getattr(app_instance, 'last_ai_response', None)
                 }
@@ -336,7 +345,7 @@ class ErrorReporter:
         return filepath
 
 
-def send_error_report(report_data: dict, screenshot_path: str = None, answer_display_path: str = None) -> bool:
+def send_error_report(report_data: dict, screenshot_path: str = None) -> bool:
     """Send error report to slckr backend API"""
     if not ERROR_REPORTING_ENABLED:
         print("⚠️ Error reporting disabled")
@@ -361,7 +370,7 @@ def send_error_report(report_data: dict, screenshot_path: str = None, answer_dis
         os_name = platform.system()
         python_version = sys.version.split()[0]
 
-        # Send report with screenshots
+        # Send report with question screenshot only (answers in HTML format in ai_response_json)
         report_id = api_client.send_report(
             error_message=error_message,
             version=version,
@@ -370,8 +379,7 @@ def send_error_report(report_data: dict, screenshot_path: str = None, answer_dis
             widget_tree_json=widget_tree_json,
             ai_response_json=ai_response_json,
             system_info_json=system_info_json,
-            question_screenshot_path=screenshot_path,
-            answer_screenshot_path=answer_display_path
+            question_screenshot_path=screenshot_path
         )
 
         return report_id is not None
@@ -1946,184 +1954,6 @@ class HomeworkApp(ctk.CTk):
             self._update_screenshot_display(None, error_msg)
             self.current_image_path = None
 
-    def _capture_answer_display(self) -> Optional[str]:
-        """
-        Capture answer display area as PNG - SECURE widget render (no screen capture)
-
-        Security: Does NOT use screen coordinates or PIL.ImageGrab.
-        Only renders the widget tree internally - no external windows can be captured.
-        """
-        try:
-            from PIL import Image, ImageDraw, ImageFont
-
-            widget = self.answer_scroll_frame
-            widget.update_idletasks()
-
-            # Get widget dimensions
-            width = max(widget.winfo_width(), 400)  # Minimum width for readability
-
-            # Get FULL scrollable content height (not just viewport)
-            if hasattr(widget, '_parent_canvas'):
-                canvas = widget._parent_canvas
-                canvas.update_idletasks()
-                bbox = canvas.bbox("all")
-                if bbox and len(bbox) == 4:
-                    # bbox = (x1, y1, x2, y2) - get full content height
-                    full_height = max(bbox[3] - bbox[1], 300)
-                    viewport_height = widget.winfo_height()
-                    print(f"📸 Capturing answer display:")
-                    print(f"   Viewport: {width}x{viewport_height}px")
-                    print(f"   Full content: {width}x{full_height}px")
-                    if hasattr(canvas, 'cget'):
-                        scrollregion = canvas.cget('scrollregion')
-                        print(f"   Canvas scrollregion: {scrollregion}")
-                else:
-                    full_height = widget.winfo_height()
-                    print(f"📸 Capturing answer display: {width}x{full_height}px (no bbox)")
-            else:
-                # Fallback to visible height
-                full_height = widget.winfo_height()
-                print(f"📸 Capturing answer display: {width}x{full_height}px (no canvas)")
-
-            height = max(full_height, 300)  # Minimum height
-
-            # Render at 2x resolution for crisp text, then scale down
-            scale = 2
-            render_width = width * scale
-            render_height = height * scale
-
-            # Create blank image with dark background at 2x resolution
-            img = Image.new('RGB', (render_width, render_height), color='#1e1e1e')
-            draw = ImageDraw.Draw(img)
-
-            # Try to load better fonts at larger sizes (scaled up 2x)
-            try:
-                # Try multiple font names for cross-platform compatibility
-                font_names = ["Arial.ttf", "arial.ttf", "Helvetica.ttf", "DejaVuSans.ttf"]
-                font = None
-                for font_name in font_names:
-                    try:
-                        font = ImageFont.truetype(font_name, 14 * scale)  # 14pt at 2x = 28pt
-                        font_bold = ImageFont.truetype(font_name.replace(".ttf", "bd.ttf"), 15 * scale)
-                        break
-                    except:
-                        continue
-
-                if font is None:
-                    raise Exception("No fonts found")
-            except:
-                # Fallback to default (will be blurry but functional)
-                font = ImageFont.load_default()
-                font_bold = font
-
-            # Track rendered widgets to prevent duplication
-            rendered_widgets = set()
-
-            def render_widget(w, x_offset=0, y_offset=0):
-                """Recursively render widget content to PIL image"""
-                try:
-                    # Check if widget already rendered (prevents duplication)
-                    widget_id = id(w)
-                    if widget_id in rendered_widgets:
-                        return
-
-                    # Mark as rendered
-                    rendered_widgets.add(widget_id)
-
-                    # Get widget position and dimensions
-                    try:
-                        rel_x = w.winfo_x()
-                        rel_y = w.winfo_y()
-                        w_width = w.winfo_width()
-                        w_height = w.winfo_height()
-                    except:
-                        return  # Widget not rendered yet
-
-                    # Scale coordinates for high-resolution rendering
-                    abs_x = (x_offset + rel_x) * scale
-                    abs_y = (y_offset + rel_y) * scale
-                    scaled_width = w_width * scale
-                    scaled_height = w_height * scale
-
-                    # Skip if outside bounds (only check X-axis to allow scrolled Y content)
-                    # Removed Y-axis check to capture full scrollable content including scrolled widgets
-                    if abs_x >= render_width or abs_x + scaled_width < 0:
-                        return  # Only skip if completely off-screen horizontally
-
-                    # Render based on widget type
-                    widget_class = w.__class__.__name__
-
-                    if 'Label' in widget_class:
-                        # Render text labels
-                        try:
-                            text = w.cget("text")
-                            if text and text.strip():
-                                text_color = 'white'
-                                try:
-                                    color_cfg = w.cget("text_color")
-                                    if isinstance(color_cfg, str):
-                                        text_color = color_cfg
-                                    elif isinstance(color_cfg, tuple):
-                                        text_color = color_cfg[0]
-                                except:
-                                    pass
-
-                                # Truncate very long text
-                                if len(text) > 100:
-                                    text = text[:97] + "..."
-
-                                # Scaled text position with padding
-                                draw.text((abs_x + 5*scale, abs_y + 3*scale), text, fill=text_color, font=font)
-                        except:
-                            pass
-
-                    elif 'Frame' in widget_class:
-                        # Render frame backgrounds
-                        try:
-                            fg_color = w.cget("fg_color")
-                            if fg_color and fg_color != "transparent":
-                                color = fg_color
-                                if isinstance(fg_color, tuple):
-                                    color = fg_color[0]
-
-                                # Draw rectangle with scaled coordinates
-                                draw.rectangle(
-                                    [abs_x, abs_y, min(abs_x + scaled_width, render_width-1), min(abs_y + scaled_height, render_height-1)],
-                                    fill=color
-                                )
-                        except:
-                            pass
-
-                    # Recursively render children
-                    try:
-                        for child in w.winfo_children():
-                            render_widget(child, abs_x, abs_y)
-                    except:
-                        pass
-
-                except Exception:
-                    # Skip widgets that cause errors
-                    pass
-
-            # Render the entire widget tree
-            render_widget(widget)
-
-            # Add watermark to indicate this is a secure render (scaled coordinates)
-            watermark_y = render_height - (20 * scale)
-            draw.text((5*scale, watermark_y), "Secure Widget Render (No Screen Capture)", fill='#666666', font=font)
-
-            # Downscale to original size for crisp antialiased text
-            img = img.resize((width, height), Image.LANCZOS)
-
-            # Save to temp file (fixed name to prevent accumulation)
-            temp_path = "./temp_answer_display.png"
-            img.save(temp_path, quality=95, optimize=True)
-            return temp_path
-
-        except Exception as e:
-            print(f"⚠️ Could not capture answer display: {e}")
-            return None
-
     def _annotate_screenshot_with_boxes(self, hot_spot_answers: list) -> Optional[str]:
         """
         Draw bounding boxes on current screenshot for hot spot answers using OCR detection
@@ -2317,12 +2147,9 @@ class HomeworkApp(ctk.CTk):
             # Create report
             report = ErrorReporter.create_report(self)
 
-            # Capture answer display as PNG
-            answer_screenshot_path = self._capture_answer_display()
-
-            # Send to error reporting backend (screenshot + answer_display_screenshot)
+            # Send to error reporting backend (question screenshot + HTML answers in report)
             screenshot_path = self.current_image_path if hasattr(self, 'current_image_path') else None
-            success = send_error_report(report, screenshot_path, answer_screenshot_path)
+            success = send_error_report(report, screenshot_path)
 
             if success:
                 print("✅ Error report sent automatically!")

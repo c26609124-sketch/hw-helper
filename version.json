@@ -1,7 +1,23 @@
 {
-  "version": "1.0.52",
+  "version": "1.0.53",
   "release_date": "2025-11-12",
   "changelog": [
+    {
+      "version": "1.0.53",
+      "date": "2025-11-12",
+      "changes": [
+        "CRITICAL FIX: Icons now load correctly from assets/icons/ directory",
+        "CRITICAL FIX: Screenshot capture now functional (lib.capture import fixed)",
+        "CRITICAL FIX: Error reports now include HTML representation of answers",
+        "FIX: Removed unreliable screenshot-based answer capture",
+        "FIX: Answer display now exported as clean HTML for error reports",
+        "NEW: export_answers_html() function for structured answer export",
+        "UPDATE: Error report API no longer uses answer screenshot parameter",
+        "UPDATE: Backend receives HTML answers in ai_response_json.answer_html",
+        "PERFORMANCE: Faster error reporting (no screenshot rendering)",
+        "UX: Error reports display answers properly on admin dashboard"
+      ]
+    },
     {
       "version": "1.0.52",
       "date": "2025-11-12",
@@ -697,9 +713,8 @@
   ],
   "file_hashes": {
     ".claude/settings.local.json": "1850059a3bdaf718e2328f1ea0e510ea5dcdd30596532d35b0abcdf18bcf76fa",
-    ".gitignore": "3975badbb2aa102a968fdbc46c7547d629ba6b15f87f6107bf10b7334931365f",
+    ".gitignore": "5c1d5016c27acf2e47ed357c27f58a1d730e44e77077599c12960f292b744d16",
     "README.md": "5164ff91ff97b24124e5e0256d8e5383ccaeb1d32aae5a3d1f7df53d7dd225a0",
-    "api_client.py": "7730baa4b91f9b7a5c4da414c46940cc35d4ea2bff6ef2baca3c45ee0e6774c4",
     "assets/icons/ai.png": "fc3194dd997184c6ebac71d7e8950cbe44a76d27bacc5b3629e16110ecaa5ebc",
     "assets/icons/brave.png": "1208d3bb6da19672da927df3de381b389af3e2175df4cb5870e3327362fec620",
     "assets/icons/button-answer.png": "d8e773e55420e9ba9e69f42236e9b70d6648b6a07d473218d9a4296f86fe42c7",
@@ -719,27 +734,22 @@
     "assets/icons/sparkles.png": "30eea26486cac59fb99b08442a566bbdbe7f722c421a7c1cded6f6ad36115186",
     "assets/icons/success.png": "71d283bc3059eeb88d6454c1fe9a2fa17dbb470ab2f950a27c006b173b734a8f",
     "assets/icons/warning.png": "0a92966b68a7861dc2ae80a3d41e23727a16828cec1bfa06334075d87fc9a530",
-    "auto_updater.py": "17a4861ac65e309f8bfd837767a009834774508316446aceb881fea77dc55ab1",
     "backend/error_server.py": "f9d9439bfe142feed1c849754d36efb5c0a6cd3796b1473f4b655651d2a7cecd",
     "backend/requirements.txt": "03c85646803cb5f0d41c8bc9bc496968bfc40b9fac6828f4ca8df9379598c58f",
     "backend/setup.sh": "cacd4c59c76dcdd7d014714bbf73eaf65ba598ee0117751acbc5a55c44783350",
     "chromedriver.exe": "af1f8649dfea69f514a37a3807463ad90ff34d2e30f1942129e72cca7269b268",
+    "config.json": "a7ecececdf6298bd744418c846f540def241fe630a0b4110abf120476717b850",
     "docs/DOMAIN_SETUP.md": "e84b1347663c3403bb62549d7bbf49f0e9e8be7f577e9e3417c5c6d2c7ce34ad",
     "docs/QUICK_START_CLOUDFLARE_TUNNEL.md": "29067b4fdcefc179fbe77de33e3b4b9bfc39e1e7f5edbbe6b53991c0174b5af4",
-    "edmentum_components.py": "4564805f56bca61ec9c8aa6f6ead318bc8b3f3b46a63834ecbb63191ecec0ab8",
-    "enhanced_answer_display.py": "bdda520cc87f179775750c2957c7514ed6216dd2506bd5a409bb168c38bde1ff",
     "lib/__init__.py": "48a6381201444a76bdf410215b554943d661a9b3d7cd64aa51445818a75429c7",
-    "lib/api.py": "6baa51b4a4e9ae0bc4fe7f16709c9c86cabac479b8ee84401c07424632ce4ab5",
+    "lib/api.py": "b59a4a3f105c7cdca14deafc46f7283a0ad51e404c73abebd17e90d11d0d4b64",
     "lib/capture.py": "6792c10d0e8dc2f4c63533462b8f04b7d169a54573b4f5dfe1933ddafabe382e",
     "lib/edmentum.py": "e9f837a1b98183a3ca6919e311f809072b7c380cefd20892039a58197cd547b5",
     "lib/updater.py": "990e470045727264b9efffea8fab06626f37d1c94727a1f39e5e042e42fa4e58",
-    "lib/utils.py": "3d1b53fe307c6ab85c92155c551138077213c51451febda08c13f813c6c39ed3",
+    "lib/utils.py": "bd912cd75b60df85c272d521f9e78b2f53e3a89301327e48d3842a60f0a077f9",
     "main.py": "b373583ee99c30931b24d386a7015a40a3f2e3c0cd395439e9b49512f483bfb9",
-    "ocr_hotspot_detector.py": "b970a9290cde57f0c1fc659b72ea79e4fa638c73c8159a5a17c47b1f58ffff09",
-    "progressive_json_parser.py": "1631cea1be89a4946e5fca1c7217c4858d55ce2e9488a5436203591d5e2dd715",
+    "regenerate_hashes.py": "53c8df04e37aa5ea0787fdedb0a7e2e91a32523ccde8c99be0f0449436dc91ee",
     "requirements.txt": "4878f698878e47828857177d127ef6d1297d6dc486067820f392bfc53471fbdb",
-    "response_validator.py": "660d19ff9b8ba2ed73ed50251f3cc167226ee743361028e1f16a0ac48c71699e",
-    "selenium_capture_logic.py": "b453900160412dadf5bd485ba9a88b397d03e9b4bbfae4254e7782f53e9ff181",
     "setup_and_run.bat": "ddc267817e449e76d19e2f4f90661a1964c29a365ca1b2a48c39404f69f4b3ba",
     "setup_and_run.sh": "82e69051dd6b1209018f66b032eced760afaa6cb8f798fdb6f5bb5e5e5b9fb12",
     "test_screenshots/01_hot_spot.png": "52b15e77e8860c602882a93151b0e745215eb0256ebb48da17590d200669cd1c",
@@ -758,9 +768,8 @@
     "test_screenshots/14_freehand_drawing.png": "a18311dbe73b18d91dafd235b8123511654d1b49775d08e3a223ec2fdd086b92",
     "test_screenshots/15_equation.png": "d1e3668d305d3ed15869ca92f46c636e17f9cbb968fe39b37f8a6b631f1da562",
     "test_screenshots/README.md": "ca09cfade3bf683ad3b2779ee7eeb6124c5486c8f8a40268649f8f7981d04452",
-    "ui.py": "189f5a84040e352b5760870da590ddd07ea1e488c474f865bd2cd198520452f2",
-    "ui_export.py": "7b507b834009750dd28a25d7bf23087071a7cfa07c795a9fff8b1a0929996397",
-    "version.json": "7abf533c2e4c9fec07629f2bfd0685f64d67fedc30d1c256a0e35ec88e27ee1f",
-    "visual_element_detector.py": "ded76931fb82050ae04135087cf6fb79b6600c2a52ed2935270a0bf3a7ada07b"
+    "ui.py": "09675d153d4f0aa77f781adc7e52e20f68ad8bba17493ff7c66035e3e9ae659e",
+    "update_version_1053.py": "d040c03f83b0943ad7e525de24b5f1faefb4899126eee8c7718b2fd9abf6e920",
+    "version.json": "e9f83fb28700aca2cf1e005196e70772db30a923af093c07b6842dd8ceab4d48"
   }
 }

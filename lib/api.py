@@ -136,8 +136,7 @@ class SlckrAPIClient:
         widget_tree_json: Optional[Dict] = None,
         ai_response_json: Optional[Dict] = None,
         system_info_json: Optional[Dict] = None,
-        question_screenshot_path: Optional[str] = None,
-        answer_screenshot_path: Optional[str] = None
+        question_screenshot_path: Optional[str] = None
     ) -> Optional[str]:
         """
         Send error report to backend
@@ -173,11 +172,6 @@ class SlckrAPIClient:
                     files['question_screenshot'] = ('question.png', fh, 'image/png')
                     file_handles.append(fh)
 
-                if answer_screenshot_path and os.path.exists(answer_screenshot_path):
-                    fh = open(answer_screenshot_path, 'rb')
-                    files['answer_screenshot'] = ('answer.png', fh, 'image/png')
-                    file_handles.append(fh)
-
                 # Send request with proper format
                 if files:
                     # Multipart request: Send JSON as 'report_data' form field
@@ -209,14 +203,6 @@ class SlckrAPIClient:
             if result and result.get('status') == 'success':
                 report_id = result.get('report_id')
                 print(f"✓ Error report sent (ID: {report_id})")
-
-                # Clean up temp answer screenshot
-                if answer_screenshot_path and os.path.exists(answer_screenshot_path):
-                    try:
-                        os.remove(answer_screenshot_path)
-                    except:
-                        pass
-
                 return report_id
             else:
                 print(f"⚠️ Error report failed: {result.get('message', 'Unknown error') if result else 'No response'}")

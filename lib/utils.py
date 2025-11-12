@@ -940,6 +940,107 @@ def get_widget_summary(widget) -> Dict[str, Any]:
     return summary
 
 
+def export_answers_html(widget) -> str:
+    """
+    Export answer display widget tree as HTML for error reports
+
+    Converts CustomTkinter widget tree to clean HTML representation
+    that can be displayed on the error report page.
+
+    Args:
+        widget: Root widget (answer_scroll_frame)
+
+    Returns:
+        HTML string with embedded CSS
+    """
+    if widget is None:
+        return "<div class='error'>No answer widget found</div>"
+
+    try:
+        html_parts = []
+        html_parts.append("""
+<style>
+.answer-container { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; background: #1e1e1e; color: #fff; }
+.answer-frame { margin: 10px 0; padding: 15px; border-radius: 8px; background: #2d2d2d; border: 1px solid #444; }
+.answer-correct { background: #1a311a; border-color: #388E3C; }
+.answer-label { font-size: 14px; line-height: 1.6; margin: 5px 0; }
+.answer-badge { display: inline-block; padding: 4px 12px; border-radius: 14px; margin-right: 8px; font-weight: bold; }
+.answer-badge-correct { background: #28A745; color: white; }
+.answer-badge-default { background: #4a90e2; color: white; }
+.answer-text { display: inline; }
+.checkmark { color: #28A745; font-size: 18px; margin-left: 10px; }
+.error { color: #e74c3c; padding: 20px; }
+</style>
+<div class='answer-container'>
+        """)
+
+        def render_widget_html(w, depth=0):
+            """Recursively render widget as HTML"""
+            if w is None or depth > 10:
+                return
+
+            try:
+                widget_class = w.__class__.__name__
+
+                # Render frames as containers
+                if 'Frame' in widget_class:
+                    try:
+                        # Check if it's a correct answer frame (green highlight)
+                        fg_color = w.cget("fg_color")
+                        is_correct = False
+                        if fg_color:
+                            color_str = str(fg_color).lower()
+                            is_correct = 'e8f5e9' in color_str or '1a311a' in color_str or '28a745' in color_str.lower()
+
+                        frame_class = "answer-frame answer-correct" if is_correct else "answer-frame"
+                        html_parts.append(f"<div class='{frame_class}'>")
+
+                        # Render children
+                        for child in w.winfo_children():
+                            render_widget_html(child, depth + 1)
+
+                        html_parts.append("</div>")
+                    except:
+                        pass
+
+                # Render labels as text
+                elif 'Label' in widget_class:
+                    try:
+                        text = w.cget("text")
+                        if text and text.strip():
+                            # Check if it's a badge (short text with specific styling)
+                            if len(text) <= 2 and text.isupper():
+                                html_parts.append(f"<span class='answer-badge answer-badge-default'>{text}</span>")
+                            # Check for checkmark
+                            elif text == "✓":
+                                html_parts.append("<span class='checkmark'>✓</span>")
+                            # Regular text
+                            else:
+                                html_parts.append(f"<div class='answer-label'><span class='answer-text'>{text}</span></div>")
+                    except:
+                        pass
+
+                # For other widgets, still render children
+                else:
+                    try:
+                        for child in w.winfo_children():
+                            render_widget_html(child, depth + 1)
+                    except:
+                        pass
+
+            except Exception:
+                pass
+
+        # Render the widget tree
+        render_widget_html(widget)
+        html_parts.append("</div>")
+
+        return "".join(html_parts)
+
+    except Exception as e:
+        return f"<div class='error'>Error exporting HTML: {e}</div>"
+
+
 # ============================================================================
 # EXPORTS
 # ============================================================================
@@ -959,4 +1060,5 @@ __all__ = [
     # UI Export
     'export_widget_tree',
     'get_widget_summary',
+    'export_answers_html',
 ]
