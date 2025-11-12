@@ -1,7 +1,18 @@
 {
-  "version": "1.0.47",
+  "version": "1.0.48",
   "release_date": "2025-11-02",
   "changelog": [
+    {
+      "version": "1.0.48",
+      "date": "2025-11-02",
+      "changes": [
+        "HOTFIX: Fixed 'self' is not defined error that broke ALL AI queries",
+        "HOTFIX: Fixed f-string syntax error in fill-blank reconstruction",
+        "FIX: Added cancellation_event parameter to get_openrouter_response_streaming()",
+        "FIX: Changed cancellation check to use parameter instead of self",
+        "FIX: AI cancellation now works correctly without NameError"
+      ]
+    },
     {
       "version": "1.0.47",
       "date": "2025-11-02",
