@@ -23,8 +23,8 @@ from datetime import datetime
 
 # --- Enhanced Visual Display ---
 try:
-    from enhanced_answer_display import EnhancedAnswerPresenter, DragToImageRenderer
-    from visual_element_detector import VisualElementDetector
+    from lib.edmentum import EnhancedAnswerPresenter, DragToImageRenderer
+    from lib.utils import VisualElementDetector
     VISUAL_ENHANCEMENT_AVAILABLE = True
 except ImportError as e:
     print(f"Note: Visual enhancement modules not available: {e}")
@@ -32,7 +32,7 @@ except ImportError as e:
 
 # --- Progressive JSON Parser ---
 try:
-    from progressive_json_parser import ProgressiveJSONParser
+    from lib.utils import ProgressiveJSONParser
     PROGRESSIVE_PARSER_AVAILABLE = True
 except ImportError as e:
     print(f"Note: Progressive parser not available: {e}")
@@ -40,7 +40,7 @@ except ImportError as e:
 
 # --- Edmentum Question Renderer ---
 try:
-    from edmentum_components import (
+    from lib.edmentum import (
         EdmentumQuestionRenderer,
         EdmentumMultipleChoice,
         EdmentumMatchedPairs,
@@ -54,7 +54,7 @@ except ImportError as e:
 
 # --- Response Validator ---
 try:
-    from response_validator import validate_response
+    from lib.utils import validate_response
     RESPONSE_VALIDATOR_AVAILABLE = True
 except ImportError as e:
     print(f"Note: Response validator not available: {e}")
@@ -62,7 +62,7 @@ except ImportError as e:
 
 # --- Auto Updater ---
 try:
-    from auto_updater import check_for_updates_silent, apply_update_silent
+    from lib.updater import check_for_updates_silent, apply_update_silent
     AUTO_UPDATER_AVAILABLE = True
 except ImportError as e:
     print(f"Note: Auto updater not available: {e}")
@@ -70,8 +70,8 @@ except ImportError as e:
 
 # --- slckr API Client ---
 try:
-    from api_client import SlckrAPIClient
-    from ui_export import export_widget_tree, get_widget_summary
+    from lib.api import SlckrAPIClient
+    from lib.utils import export_widget_tree, get_widget_summary
     API_CLIENT_AVAILABLE = True
 except ImportError as e:
     print(f"Note: API client not available: {e}")
@@ -352,13 +352,21 @@ def send_error_report(report_data: dict, screenshot_path: str = None, answer_dis
 
         # Extract fields from report data
         error_message = report_data.get('error_message', 'Unknown error')
+        version = report_data.get('version', 'Unknown')
         widget_tree_json = report_data.get('widget_tree_json')
         ai_response_json = report_data.get('ai_response_json')
         system_info_json = report_data.get('system_info_json')
 
+        # Get system info
+        os_name = platform.system()
+        python_version = sys.version.split()[0]
+
         # Send report with screenshots
         report_id = api_client.send_report(
             error_message=error_message,
+            version=version,
+            os_name=os_name,
+            python_version=python_version,
             widget_tree_json=widget_tree_json,
             ai_response_json=ai_response_json,
             system_info_json=system_info_json,
@@ -1506,7 +1514,13 @@ class HomeworkApp(ctk.CTk):
                         except:
                             pass
                         self.current_version = version
-                        api_client.send_telemetry(version)
+
+                        # Get system info for telemetry
+                        os_name = platform.system()
+                        python_version = sys.version.split()[0]  # Get just version number
+
+                        # Send telemetry with all required parameters
+                        api_client.send_telemetry(version, os_name, python_version)
                     except Exception as e:
                         print(f"⚠️ Telemetry failed: {e}")
 
@@ -5289,8 +5303,21 @@ If any part of the question or an answer involves a numeric value that you canno
                 if hasattr(self, 'streaming_container') and self.streaming_container.winfo_exists():
                     self.streaming_container.destroy()
 
-        # Standard display (fallback)
-        self.display_ai_answers(processed_data)
+        # CRITICAL FIX: Check if content is already displayed via progressive streaming
+        # If progressive_answers_container exists and has content, DON'T clear it!
+        has_progressive_content = (
+            hasattr(self, 'progressive_answers_container') and
+            self.progressive_answers_container is not None and
+            self.progressive_answers_container.winfo_exists() and
+            len(self.progressive_answers_container.winfo_children()) > 0
+        )
+
+        if has_progressive_content:
+            print("✓ Content already displayed via progressive streaming - skipping display_ai_answers()")
+        else:
+            # Standard display (fallback) - only when content NOT already displayed
+            print("⚠️ No progressive content found - using standard display")
+            self.display_ai_answers(processed_data)
 
         # Transform Cancel button back to Get AI Answer button
         self.ai_button.configure(

@@ -17,7 +17,7 @@ class SlckrAPIClient:
     """Client for communicating with slckr.xyz backend API"""
 
     BASE_URL = "https://api.slckr.xyz"
-    SECRET_FILE = "client_secret.txt"
+    SECRET_FILE = Path.home() / ".hwhelper" / "client_secret.json"
 
     def __init__(self):
         self.client_id = None
@@ -26,7 +26,8 @@ class SlckrAPIClient:
 
     def _load_or_create_secret(self):
         """Load existing client secret or generate new one"""
-        secret_path = Path(__file__).parent / self.SECRET_FILE
+        secret_path = self.SECRET_FILE
+        secret_path.parent.mkdir(parents=True, exist_ok=True)
 
         try:
             if secret_path.exists():
@@ -103,14 +104,14 @@ class SlckrAPIClient:
         except:
             return False
 
-    def send_telemetry(self, version: str) -> bool:
+    def send_telemetry(self, version: str, os_name: str, python_version: str) -> bool:
         """Send telemetry ping on app startup"""
         try:
             data = {
                 'client_id': self.client_id,
                 'version': version,
-                'os': platform.system(),
-                'python_version': sys.version.split()[0]
+                'os': os_name,
+                'python_version': python_version
             }
 
             result = self._make_request('POST', '/api/telemetry', json=data)
@@ -129,6 +130,9 @@ class SlckrAPIClient:
     def send_report(
         self,
         error_message: str,
+        version: str,
+        os_name: str,
+        python_version: str,
         widget_tree_json: Optional[Dict] = None,
         ai_response_json: Optional[Dict] = None,
         system_info_json: Optional[Dict] = None,
@@ -142,19 +146,22 @@ class SlckrAPIClient:
             Report ID if successful, None otherwise
         """
         try:
-            # Prepare form data
-            data = {
+            # Prepare report data (matching backend field names)
+            report_data = {
                 'client_id': self.client_id,
+                'version': version,
+                'os': os_name,
+                'python_version': python_version,
                 'error_message': error_message
             }
 
-            # Add JSON fields if provided
+            # Add JSON fields if provided (matching backend field names)
             if widget_tree_json:
-                data['widget_tree_json'] = json.dumps(widget_tree_json, default=str)
+                report_data['widget_tree_json'] = widget_tree_json
             if ai_response_json:
-                data['ai_response_json'] = json.dumps(ai_response_json, default=str)
+                report_data['ai_response_data'] = ai_response_json  # Backend expects 'ai_response_data'
             if system_info_json:
-                data['system_info_json'] = json.dumps(system_info_json, default=str)
+                report_data['system_info'] = system_info_json  # Backend expects 'system_info'
 
             # Prepare file uploads
             files = {}
@@ -171,13 +178,25 @@ class SlckrAPIClient:
                     files['answer_screenshot'] = ('answer.png', fh, 'image/png')
                     file_handles.append(fh)
 
-                # Send request
-                result = self._make_request(
-                    'POST',
-                    '/api/report',
-                    data=data,
-                    files=files if files else None
-                )
+                # Send request with proper format
+                if files:
+                    # Multipart request: Send JSON as 'report_data' form field
+                    form_data = {
+                        'report_data': json.dumps(report_data, default=str)
+                    }
+                    result = self._make_request(
+                        'POST',
+                        '/api/report',
+                        data=form_data,
+                        files=files
+                    )
+                else:
+                    # Pure JSON request (no files)
+                    result = self._make_request(
+                        'POST',
+                        '/api/report',
+                        json=report_data
+                    )
 
             finally:
                 # Always close file handles

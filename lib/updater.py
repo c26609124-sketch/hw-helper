@@ -1,6 +1,6 @@
 """
 Auto-Update System for HW Helper
-Checks GitHub for updates and applies them automatically
+Checks GitHub for updates and applies them automatically with hash-based differential updates
 """
 
 import json
@@ -11,8 +11,9 @@ import urllib.error
 import shutil
 import tempfile
 import zipfile
+import hashlib
 from pathlib import Path
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict, Tuple, List
 import logging
 
 # GitHub repository info
@@ -107,6 +108,26 @@ class AutoUpdater:
             logger.error(f"Error comparing versions: {e}")
             return False
 
+    def _compute_file_hash(self, file_path: Path) -> str:
+        """
+        Compute SHA256 hash of a file
+
+        Args:
+            file_path: Path to file
+
+        Returns:
+            Hexadecimal hash string
+        """
+        sha256 = hashlib.sha256()
+        try:
+            with open(file_path, 'rb') as f:
+                for chunk in iter(lambda: f.read(8192), b''):
+                    sha256.update(chunk)
+            return sha256.hexdigest()
+        except Exception as e:
+            logger.error(f"Error computing hash for {file_path}: {e}")
+            return ""
+
     def check_for_updates(self) -> Tuple[bool, Optional[Dict]]:
         """
         Check if updates are available
@@ -195,24 +216,33 @@ class AutoUpdater:
             logger.error(f"Error getting repo files: {e}")
             return None
 
-    def download_update(self, files_to_update: Optional[list] = None, progress_callback=None) -> bool:
+    def download_update(self, remote_version_data: Optional[Dict] = None, progress_callback=None) -> bool:
         """
-        Download update files from GitHub
+        Download update files from GitHub (hash-based differential update)
 
         Args:
-            files_to_update: List of specific files to update (None = all files)
+            remote_version_data: Remote version data with file_hashes (from version.json)
             progress_callback: Optional callback function(current, total, filename, percentage)
 
         Returns:
             True if successful, False otherwise
         """
         try:
-            # Get list of files to download
-            if files_to_update is None:
+            # Get remote file hashes
+            remote_hashes = {}
+            if remote_version_data:
+                remote_hashes = remote_version_data.get('file_hashes', {})
+
+            # If no hashes available, fall back to downloading all files
+            if not remote_hashes:
+                logger.warning("No file hashes in version.json - downloading all files")
                 files_to_update = self._get_repo_files()
                 if not files_to_update:
                     logger.error("Could not get list of files to update")
                     return False
+            else:
+                # Hash-based comparison - only download changed files
+                files_to_update = list(remote_hashes.keys())
 
             # Filter out files we don't want to overwrite
             excluded_patterns = [
@@ -222,7 +252,8 @@ class AutoUpdater:
                 '.DS_Store',
                 'screenshots/',
                 'saved_screenshots/',
-                'api_key.txt'  # Don't overwrite user's API key
+                'api_key.txt',  # Don't overwrite user's API key
+                'config.json'  # Don't overwrite user's config
             ]
 
             files_to_download = []
@@ -231,9 +262,28 @@ class AutoUpdater:
                 if any(pattern.replace('*', '') in file_path or file_path.startswith(pattern.replace('*', ''))
                        for pattern in excluded_patterns):
                     continue
-                files_to_download.append(file_path)
 
-            logger.info(f"Downloading {len(files_to_download)} files...")
+                # If hashes available, compare local vs remote
+                if remote_hashes and file_path in remote_hashes:
+                    local_path = self.current_dir / file_path
+                    remote_hash = remote_hashes[file_path]
+
+                    # Download if file missing OR hash differs
+                    if not local_path.exists():
+                        files_to_download.append(file_path)
+                        logger.info(f"  New file: {file_path}")
+                    else:
+                        local_hash = self._compute_file_hash(local_path)
+                        if local_hash != remote_hash:
+                            files_to_download.append(file_path)
+                            logger.info(f"  Changed: {file_path}")
+                        else:
+                            logger.debug(f"  Unchanged: {file_path}")
+                else:
+                    # No hash info - download file
+                    files_to_download.append(file_path)
+
+            logger.info(f"Downloading {len(files_to_download)}/{len(files_to_update)} changed files...")
 
             # Create backup directory
             backup_dir = self.current_dir / '.update_backup'
@@ -281,7 +331,7 @@ class AutoUpdater:
 
     def apply_update(self, progress_callback=None) -> bool:
         """
-        Check for and apply updates
+        Check for and apply updates (with hash-based differential download)
 
         Args:
             progress_callback: Optional callback function(current, total, filename, percentage)
@@ -296,7 +346,7 @@ class AutoUpdater:
 
         logger.info("Applying update...")
 
-        if self.download_update(progress_callback=progress_callback):
+        if self.download_update(remote_version_data=remote_data, progress_callback=progress_callback):
             logger.info("Update applied successfully!")
             logger.info(f"Updated to version {remote_data['version']}")
 

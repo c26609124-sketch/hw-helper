@@ -10,7 +10,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# NOTE: lib/ is a SOURCE directory for our modules, not Python build artifacts
+# If you need to exclude Python's lib/ build directory, use lib64/ instead
 lib64/
 parts/
 sdist/
@@ -40,10 +41,11 @@ Thumbs.db
 api_key.txt
 screenshots/
 saved_screenshots/
+.hwhelper/
 
-# Ignore image files EXCEPT in icons/ and test_screenshots/ directories
+# Ignore image files EXCEPT in assets/icons/ and test_screenshots/ directories
 *.png
-!icons/*.png
+!assets/icons/*.png
 !test_screenshots/*.png
 *.jpg
 *.jpeg
@@ -55,6 +57,7 @@ saved_screenshots/
 .env.local
 credentials.json
 client_secret.txt
+client_secret.json
 
 # Logs
 *.log

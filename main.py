@@ -11,7 +11,7 @@ import threading
 
 # Try to import auto_updater (minimal dependency)
 try:
-    from auto_updater import check_for_updates_silent, apply_update_silent
+    from lib.updater import check_for_updates_silent, apply_update_silent
     AUTO_UPDATER_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️ Auto updater not available: {e}")
