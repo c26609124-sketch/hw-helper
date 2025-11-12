@@ -68,8 +68,36 @@ except ImportError as e:
     print(f"Note: Auto updater not available: {e}")
     AUTO_UPDATER_AVAILABLE = False
 
-# --- Discord Error Reporting ---
-DISCORD_ERROR_WEBHOOK = "https://discord.com/api/webhooks/1433581225443852358/zM7WtUo3N6FRigTtJfgmtzXpu5_giyrWrkbcz7nTej8QiJjNAQCfqlta8m5_eCabta3b"
+# --- slckr API Client ---
+try:
+    from api_client import SlckrAPIClient
+    from ui_export import export_widget_tree, get_widget_summary
+    API_CLIENT_AVAILABLE = True
+except ImportError as e:
+    print(f"Note: API client not available: {e}")
+    API_CLIENT_AVAILABLE = False
+
+# --- Error Reporting Configuration ---
+# Error reporting endpoint loaded from config.json
+ERROR_REPORTING_ENDPOINT = ""
+ERROR_REPORTING_ENABLED = False
+
+def load_error_reporting_config():
+    """Load error reporting configuration from config.json"""
+    global ERROR_REPORTING_ENDPOINT, ERROR_REPORTING_ENABLED
+    try:
+        config_path = Path(__file__).parent / "config.json"
+        if config_path.exists():
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+                error_config = config.get('error_reporting', {})
+                ERROR_REPORTING_ENABLED = error_config.get('enabled', False)
+                ERROR_REPORTING_ENDPOINT = error_config.get('endpoint', '')
+    except Exception as e:
+        print(f"⚠️ Could not load error reporting config: {e}")
+
+# Load error reporting config on module import
+load_error_reporting_config()
 
 # --- PIL Text Capability Check ---
 try:
@@ -248,36 +276,54 @@ class ErrorReporter:
         """Generate comprehensive error report"""
         import platform
 
-        # Get screenshot data if available
-        screenshot_data = None
-        if hasattr(app_instance, 'current_image_path') and app_instance.current_image_path and os.path.exists(app_instance.current_image_path):
+        # Extract error message from last exception or activity log
+        error_message = "Unknown error"
+        if hasattr(app_instance, 'last_exception') and app_instance.last_exception:
+            error_message = str(app_instance.last_exception)
+        elif hasattr(app_instance, 'activity_log') and app_instance.activity_log.log_entries:
+            # Get last error from activity log
+            for entry in reversed(app_instance.activity_log.log_entries):
+                if '❌' in entry or '🚨' in entry or 'ERROR' in entry.upper():
+                    error_message = entry[:200]
+                    break
+
+        # Export widget tree from answer display
+        widget_tree_json = None
+        if API_CLIENT_AVAILABLE and hasattr(app_instance, 'answer_scroll_frame'):
             try:
-                with open(app_instance.current_image_path, 'rb') as f:
-                    import base64
-                    screenshot_data = base64.b64encode(f.read()).decode('utf-8')[:10000]
-            except:
-                screenshot_data = "[Failed to read screenshot]"
+                widget_tree_json = export_widget_tree(app_instance.answer_scroll_frame, max_depth=8)
+            except Exception as e:
+                widget_tree_json = {"error": f"Widget export failed: {e}"}
+
+        # Capture last AI response metadata
+        ai_response_json = None
+        if hasattr(app_instance, 'last_ai_response'):
+            try:
+                ai_response_json = {
+                    "model": app_instance.selected_model_var.get() if hasattr(app_instance, 'selected_model_var') else None,
+                    "answer_text": app_instance.answer_textbox.get("1.0", "end")[:5000] if hasattr(app_instance, 'answer_textbox') else "",
+                    "response_metadata": getattr(app_instance, 'last_ai_response', None)
+                }
+            except Exception as e:
+                ai_response_json = {"error": f"AI response capture failed: {e}"}
+
+        # System information
+        system_info_json = {
+            "os": platform.system(),
+            "os_version": platform.version(),
+            "python_version": sys.version.split()[0],
+            "ctk_version": ctk.__version__,
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+        }
 
         return {
-            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "error_message": error_message,
             "version": getattr(app_instance, 'current_version', 'Unknown'),
-            "system": {
-                "os": platform.system(),
-                "os_version": platform.version(),
-                "python_version": sys.version,
-                "ctk_version": ctk.__version__
-            },
-            "screenshot": {
-                "exists": bool(getattr(app_instance, 'current_image_path', None)),
-                "path": str(app_instance.current_image_path) if hasattr(app_instance, 'current_image_path') and app_instance.current_image_path else None,
-                "size": str(app_instance.original_pil_image_for_crop.size) if hasattr(app_instance, 'original_pil_image_for_crop') and app_instance.original_pil_image_for_crop else None,
-                "preview": screenshot_data
-            },
+            "widget_tree_json": widget_tree_json,
+            "ai_response_json": ai_response_json,
+            "system_info_json": system_info_json,
             "activity_log": app_instance.activity_log.log_entries[-50:] if hasattr(app_instance, 'activity_log') else [],
-            "answer_text": app_instance.answer_textbox.get("1.0", "end")[:5000] if hasattr(app_instance, 'answer_textbox') else "",
-            "last_error": str(getattr(app_instance, 'last_exception', None)),
-            "model": app_instance.selected_model_var.get() if hasattr(app_instance, 'selected_model_var') else None,
-            "api_key_present": bool(getattr(app_instance, 'api_key', None))
+            "screenshot_path": str(app_instance.current_image_path) if hasattr(app_instance, 'current_image_path') and app_instance.current_image_path else None
         }
 
     @staticmethod
@@ -290,64 +336,40 @@ class ErrorReporter:
         return filepath
 
 
-def send_error_to_discord(report_data: dict, screenshot_path: str = None, answer_display_path: str = None) -> bool:
-    """Send error report to Discord webhook automatically"""
+def send_error_report(report_data: dict, screenshot_path: str = None, answer_display_path: str = None) -> bool:
+    """Send error report to slckr backend API"""
+    if not ERROR_REPORTING_ENABLED:
+        print("⚠️ Error reporting disabled")
+        return False
+
+    if not API_CLIENT_AVAILABLE:
+        print("⚠️ API client not available - install api_client.py")
+        return False
+
     try:
-        # Create Discord embed with error summary
-        embed = {
-            "title": "🚨 Homework Helper Error Report",
-            "color": 0xFF0000,  # Red
-            "fields": [
-                {"name": "Version", "value": str(report_data.get("version", "Unknown")), "inline": True},
-                {"name": "OS", "value": str(report_data.get("system", {}).get("os", "Unknown")), "inline": True},
-                {"name": "Python", "value": str(report_data.get("system", {}).get("python_version", "Unknown"))[:50], "inline": True},
-                {"name": "Timestamp", "value": str(report_data.get("timestamp", "Unknown")), "inline": False}
-            ],
-            "timestamp": datetime.utcnow().isoformat()
-        }
+        # Initialize API client
+        api_client = SlckrAPIClient()
 
-        # Add last error if available
-        if "last_error" in report_data and report_data["last_error"] != "None":
-            error_text = str(report_data["last_error"])[:1000]
-            embed["description"] = f"**Last Error:**\n```{error_text}```"
+        # Extract fields from report data
+        error_message = report_data.get('error_message', 'Unknown error')
+        widget_tree_json = report_data.get('widget_tree_json')
+        ai_response_json = report_data.get('ai_response_json')
+        system_info_json = report_data.get('system_info_json')
 
-        # Send embed
-        response = requests.post(DISCORD_ERROR_WEBHOOK, json={"embeds": [embed]}, timeout=5)
-        response.raise_for_status()
+        # Send report with screenshots
+        report_id = api_client.send_report(
+            error_message=error_message,
+            widget_tree_json=widget_tree_json,
+            ai_response_json=ai_response_json,
+            system_info_json=system_info_json,
+            question_screenshot_path=screenshot_path,
+            answer_screenshot_path=answer_display_path
+        )
 
-        # Upload full JSON as attachment
-        json_bytes = json.dumps(report_data, indent=2, default=str).encode('utf-8')
-        files = {"file": ("error_report.json", json_bytes)}
-        response = requests.post(DISCORD_ERROR_WEBHOOK, files=files, timeout=10)
-        response.raise_for_status()
+        return report_id is not None
 
-        # Upload question screenshot if available
-        if screenshot_path and os.path.exists(screenshot_path):
-            try:
-                with open(screenshot_path, 'rb') as f:
-                    screenshot_files = {"file": ("question_screenshot.png", f)}
-                    requests.post(DISCORD_ERROR_WEBHOOK, files=screenshot_files, timeout=15)
-            except Exception as e:
-                print(f"⚠️ Could not upload question screenshot: {e}")
-
-        # Upload answer display screenshot if available
-        if answer_display_path and os.path.exists(answer_display_path):
-            try:
-                with open(answer_display_path, 'rb') as f:
-                    answer_files = {"file": ("answer_display.png", f)}
-                    requests.post(DISCORD_ERROR_WEBHOOK, files=answer_files, timeout=15)
-            except Exception as e:
-                print(f"⚠️ Could not upload answer display: {e}")
-            finally:
-                # Clean up temp file
-                try:
-                    os.remove(answer_display_path)
-                except:
-                    pass
-
-        return True
     except Exception as e:
-        print(f"⚠️ Could not send to Discord: {e}")
+        print(f"⚠️ Could not send error report: {e}")
         return False
 
 
@@ -924,8 +946,10 @@ class UpdateModal(ctk.CTkToplevel):
         'FIX': '#34a853',      # Green
         'CRITICAL': '#ea4335', # Red
         'UPDATE': '#fbbc04',   # Yellow
-        'SECURITY': '#ff6b35',  # Orange
-        'COMPLETE': '#9c27b0',  # Purple
+        'SECURITY': '#ff6b35', # Orange
+        'COMPLETE': '#9c27b0', # Purple
+        'HOTFIX': '#f39c12',   # Bright Orange
+        'UX': '#1abc9c',       # Teal
     }
 
     def __init__(self, parent, version: str, changelog: list):
@@ -1464,6 +1488,33 @@ class HomeworkApp(ctk.CTk):
         self.visual_toggle.pack(side="left")
         
         self.load_config()
+
+        # Send telemetry ping on app startup (non-blocking)
+        if API_CLIENT_AVAILABLE:
+            try:
+                def send_telemetry_async():
+                    try:
+                        api_client = SlckrAPIClient()
+                        # Load version from version.json
+                        version = "1.0.50"
+                        try:
+                            version_file = Path(__file__).parent / "version.json"
+                            if version_file.exists():
+                                with open(version_file, 'r') as f:
+                                    version_data = json.load(f)
+                                    version = version_data.get('version', '1.0.50')
+                        except:
+                            pass
+                        self.current_version = version
+                        api_client.send_telemetry(version)
+                    except Exception as e:
+                        print(f"⚠️ Telemetry failed: {e}")
+
+                telemetry_thread = threading.Thread(target=send_telemetry_async, daemon=True)
+                telemetry_thread.start()
+            except Exception as e:
+                print(f"⚠️ Could not start telemetry: {e}")
+
         self.save_settings_button = ctk.CTkButton(settings_outer_frame, text="Save Settings", command=self.save_config, height=30, font=("Segoe UI", 12)); self.save_settings_button.pack(pady=(10,10), padx=10, fill="x")
         
         self.log_label = ctk.CTkLabel(self.left_panel, text="Activity Log", font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold")); self.log_label.grid(row=2, column=0, padx=10, pady=(10,2), sticky="nw")
@@ -2255,9 +2306,9 @@ class HomeworkApp(ctk.CTk):
             # Capture answer display as PNG
             answer_screenshot_path = self._capture_answer_display()
 
-            # Send to Discord (screenshot + answer_display_screenshot)
+            # Send to error reporting backend (screenshot + answer_display_screenshot)
             screenshot_path = self.current_image_path if hasattr(self, 'current_image_path') else None
-            success = send_error_to_discord(report, screenshot_path, answer_screenshot_path)
+            success = send_error_report(report, screenshot_path, answer_screenshot_path)
 
             if success:
                 print("✅ Error report sent automatically!")
@@ -5173,12 +5224,13 @@ If any part of the question or an answer involves a numeric value that you canno
                 passage = getattr(self, 'hot_text_passage', question_text)
 
                 # Create component in progressive_answers_container
-                EdmentumHotText(
+                component = EdmentumHotText(
                     self.progressive_answers_container,
                     question_text,
                     passage,
                     self.hot_text_selections
                 )
+                self.edmentum_component = component
                 print("✅ Hot text rendering complete with highlighted passages")
 
             # Clean up

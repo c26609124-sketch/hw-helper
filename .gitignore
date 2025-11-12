@@ -55,6 +55,7 @@ saved_screenshots/
 .env.local
 credentials.json
 config.json
+client_secret.txt
 
 # Logs
 *.log

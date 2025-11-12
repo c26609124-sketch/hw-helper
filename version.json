@@ -1,7 +1,47 @@
 {
-  "version": "1.0.48",
-  "release_date": "2025-11-02",
+  "version": "1.0.50",
+  "release_date": "2025-11-12",
   "changelog": [
+    {
+      "version": "1.0.50",
+      "date": "2025-11-12",
+      "changes": [
+        "NEW: Self-hosted slckr.xyz backend integration (replaced generic endpoint)",
+        "NEW: Client authentication system with persistent UUID secrets",
+        "NEW: Telemetry pings on app startup (track installations anonymously)",
+        "NEW: Widget tree JSON export for error reports (structured UI data)",
+        "NEW: AI response JSON captured in error reports",
+        "NEW: Admin dashboard at https://slckr.xyz with Coinbase design",
+        "NEW: api_client.py module for centralized API communication",
+        "NEW: ui_export.py module for CustomTkinter widget tree export",
+        "FIX: Error reports now include complete context (widget tree + AI data)",
+        "UPDATE: Error reporting endpoint changed to api.slckr.xyz",
+        "UPDATE: Client secrets stored in client_secret.txt (auto-generated)",
+        "SECURITY: Rate limiting enforced (10 reports/hour per client)"
+      ]
+    },
+    {
+      "version": "1.0.49",
+      "date": "2025-11-12",
+      "changes": [
+        "CRITICAL FIX: Hot text answers no longer disappear after streaming completes!",
+        "CRITICAL FIX: EdmentumHotText component now properly stored in self.edmentum_component",
+        "NEW: Configurable error reporting backend - replace banned Discord webhook",
+        "NEW: Flask backend API for error reporting (backend/error_server.py)",
+        "NEW: SQLite database storage for error reports with admin dashboard",
+        "NEW: Cloudflare Tunnel integration guide for permanent HTTPS URLs",
+        "NEW: HOTFIX badge support in update modal (bright orange)",
+        "NEW: UX badge support in update modal (teal)",
+        "NEW: Complete domain setup documentation (docs/DOMAIN_SETUP.md)",
+        "FIX: Error reporting endpoint now loaded from config.json",
+        "FIX: send_error_to_discord() renamed to send_error_report() with generic HTTP POST",
+        "FIX: Answers now persist after streaming finalization for all question types",
+        "UX: Error reports include screenshots and full system diagnostics",
+        "UX: Admin dashboard for viewing error reports at backend root URL",
+        "UX: Free domain options documented (Cloudflare, Freenom, auto-generated)",
+        "SECURITY: Removed hardcoded Discord webhook from source code"
+      ]
+    },
     {
       "version": "1.0.48",
       "date": "2025-11-02",
