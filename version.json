@@ -1,7 +1,18 @@
 {
-  "version": "1.0.57",
+  "version": "1.0.58",
   "release_date": "2025-11-12",
   "changelog": [
+    {
+      "version": "1.0.58",
+      "date": "2025-11-12",
+      "changes": [
+        "CRITICAL FIX: Python f-string syntax error preventing app launch!",
+        "FIX: lib/capture.py line 77 - Extracted backslash replacement outside f-string",
+        "TECHNICAL: F-strings cannot contain backslash escapes in expression part",
+        "TECHNICAL: Changed from f\"name='{path.replace('\\\\', '\\\\\\\\')}' to escaped_path variable",
+        "NOTE: This error would have prevented Windows users from launching after v1.0.57 update"
+      ]
+    },
     {
       "version": "1.0.57",
       "date": "2025-11-12",
@@ -788,7 +799,7 @@
     "docs/QUICK_START_CLOUDFLARE_TUNNEL.md": "29067b4fdcefc179fbe77de33e3b4b9bfc39e1e7f5edbbe6b53991c0174b5af4",
     "lib/__init__.py": "48a6381201444a76bdf410215b554943d661a9b3d7cd64aa51445818a75429c7",
     "lib/api.py": "b59a4a3f105c7cdca14deafc46f7283a0ad51e404c73abebd17e90d11d0d4b64",
-    "lib/capture.py": "6792c10d0e8dc2f4c63533462b8f04b7d169a54573b4f5dfe1933ddafabe382e",
+    "lib/capture.py": "da4125231d4daa1f936c2d250bc67faa6f5afe3659133ad733dfc9d425509a88",
     "lib/edmentum.py": "e9f837a1b98183a3ca6919e311f809072b7c380cefd20892039a58197cd547b5",
     "lib/updater.py": "b7f0551f099d713c49d90a5be47d1e5d98c20a9fa1de3a8f91471ae99bdb5cba",
     "lib/utils.py": "bd912cd75b60df85c272d521f9e78b2f53e3a89301327e48d3842a60f0a077f9",
@@ -819,6 +830,7 @@
     "update_version_1055.py": "b32336455a428fb75d79085c06d18648e19d7dd5f1a81dae1b67e1f748dfdd07",
     "update_version_1056.py": "80768c4b5b3a8052afdb2c6106b202a5443536bc1af0c0f40ade04ea52c1843d",
     "update_version_1057.py": "89cf49bda7c73bbd52634ac2fb9e49fbb8b162985427b99d241fb0a6621eecd7",
-    "version.json": "90f8bee7db2291a37415e89458f6cabbeceb37b3c633376b1f35315b9e624e6b"
+    "update_version_1058.py": "1e148f8b07bdcecf60fea97dd68d4e8bb7aad30f6593aee277f868fe1cf42355",
+    "version.json": "d2002b1bfb6f81817844a1a6b0ad585029664052115080a5b8e8f04d08f8a7ee"
   }
 }

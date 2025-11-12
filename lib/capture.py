@@ -73,8 +73,10 @@ def get_brave_version() -> Optional[str]:
             for brave_path in paths:
                 if os.path.exists(brave_path):
                     # Get file version using wmic
+                    # Extract path replacement outside f-string (backslashes not allowed in f-string expressions)
+                    escaped_path = brave_path.replace('\\', '\\\\')
                     result = subprocess.run(
-                        ['wmic', 'datafile', 'where', f"name='{brave_path.replace('\\', '\\\\')}'", 'get', 'Version'],
+                        ['wmic', 'datafile', 'where', f"name='{escaped_path}'", 'get', 'Version'],
                         capture_output=True,
                         text=True,
                         timeout=10
