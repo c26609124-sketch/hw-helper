@@ -1,7 +1,17 @@
 {
-  "version": "1.0.54",
+  "version": "1.0.55",
   "release_date": "2025-11-12",
   "changelog": [
+    {
+      "version": "1.0.55",
+      "date": "2025-11-12",
+      "changes": [
+        "CRITICAL FIX: Answers no longer disappear when streaming finishes!",
+        "FIX: streaming_container now uses selective child destruction",
+        "FIX: progressive_answers_container preserved during finalization",
+        "TECHNICAL: Replaced .destroy() with selective widget destruction loop"
+      ]
+    },
     {
       "version": "1.0.54",
       "date": "2025-11-12",
@@ -776,9 +786,10 @@
     "test_screenshots/14_freehand_drawing.png": "a18311dbe73b18d91dafd235b8123511654d1b49775d08e3a223ec2fdd086b92",
     "test_screenshots/15_equation.png": "d1e3668d305d3ed15869ca92f46c636e17f9cbb968fe39b37f8a6b631f1da562",
     "test_screenshots/README.md": "ca09cfade3bf683ad3b2779ee7eeb6124c5486c8f8a40268649f8f7981d04452",
-    "ui.py": "d9340c20cb724de80297222147a9a11591dfe4fbe959c975c042b089edaffb16",
+    "ui.py": "b51df6289e036402fe2079c6edea9ba1ab3b74f32fa672b31f7075a9bd112e0f",
     "update_version_1053.py": "d040c03f83b0943ad7e525de24b5f1faefb4899126eee8c7718b2fd9abf6e920",
     "update_version_1054.py": "c89e81166051aadec231535c7534863fae458a3ed2e85da6215d499b9bf5c6de",
-    "version.json": "e0be49f0475401f03ad9d965dc69fed7d253d7cac6a7775884aa8c2c19c3bbe6"
+    "update_version_1055.py": "b32336455a428fb75d79085c06d18648e19d7dd5f1a81dae1b67e1f748dfdd07",
+    "version.json": "4e8cb376de020fd330b08f4fd2e780ac4ff59f8b12869cd96c91cbafeae9dccd"
   }
 }

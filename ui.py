@@ -5106,7 +5106,10 @@ If any part of the question or an answer involves a numeric value that you canno
         # (Edmentum rendering needs to keep the initial_analysis display)
         if not should_use_edmentum:
             if hasattr(self, 'streaming_container') and self.streaming_container.winfo_exists():
-                self.streaming_container.destroy()
+                # Destroy only non-answer widgets (preserve progressive_answers_container)
+                for widget in self.streaming_container.winfo_children():
+                    if widget != getattr(self, 'progressive_answers_container', None):
+                        widget.destroy()
 
         # Try Edmentum rendering if applicable
         if should_use_edmentum:
@@ -5128,7 +5131,10 @@ If any part of the question or an answer involves a numeric value that you canno
                 print("⚠️ Edmentum rendering failed, falling back to standard display")
                 # Clear streaming container for standard display
                 if hasattr(self, 'streaming_container') and self.streaming_container.winfo_exists():
-                    self.streaming_container.destroy()
+                    # Destroy only non-answer widgets (preserve progressive_answers_container)
+                    for widget in self.streaming_container.winfo_children():
+                        if widget != getattr(self, 'progressive_answers_container', None):
+                            widget.destroy()
 
         # CRITICAL FIX: Check if content is already displayed via progressive streaming
         # If progressive_answers_container exists and has content, DON'T clear it!
