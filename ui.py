@@ -673,10 +673,13 @@ MODEL_DISPLAY_NAMES = {
 # Default model for best balance of accuracy and cost
 DEFAULT_MODEL = "google/gemini-2.5-flash"
 
-def get_openrouter_response_streaming(api_key: str, model_name: str, image_base64: str, prompt_text: str, chunk_callback=None) -> dict:
+def get_openrouter_response_streaming(api_key: str, model_name: str, image_base64: str, prompt_text: str, chunk_callback=None, cancellation_event=None) -> dict:
     """
     Call OpenRouter API with STREAMING enabled for 1-3s time-to-first-token.
     Uses Server-Sent Events (SSE) per openrouter_api_stream.md
+
+    Args:
+        cancellation_event: Optional threading.Event to check for cancellation
     """
     if not api_key:
         return {"status": "ERROR_PROCESSING_FAILED", "error_message": "API Key not provided"}
@@ -733,7 +736,7 @@ def get_openrouter_response_streaming(api_key: str, model_name: str, image_base6
 
         for chunk in response.iter_content(chunk_size=1024, decode_unicode=True):
             # Check for cancellation
-            if hasattr(self, 'ai_cancelled') and self.ai_cancelled.is_set():
+            if cancellation_event and cancellation_event.is_set():
                 print("🛑 AI streaming cancelled by user")
                 return {"status": "CANCELLED", "error_message": "Cancelled by user"}
 
@@ -3957,7 +3960,8 @@ If any part of the question or an answer involves a numeric value that you canno
             model_name,
             self.current_image_base64,
             prompt,
-            chunk_callback=stream_chunk_callback
+            chunk_callback=stream_chunk_callback,
+            cancellation_event=self.ai_cancelled
         )
 
         # Flush any pending render data
