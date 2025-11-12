@@ -128,6 +128,43 @@ class AutoUpdater:
             logger.error(f"Error computing hash for {file_path}: {e}")
             return ""
 
+    def _clear_python_cache(self):
+        """
+        Clear Python bytecode cache files (.pyc) to force reload of updated modules
+
+        This is CRITICAL after updates - without clearing cache, Python will continue
+        using old cached .pyc files even though the source .py files have changed.
+        """
+        logger.info("Clearing Python bytecode cache...")
+        cleared_count = 0
+
+        try:
+            # Clear __pycache__ directories
+            for pycache_dir in self.current_dir.rglob('__pycache__'):
+                try:
+                    shutil.rmtree(pycache_dir)
+                    cleared_count += 1
+                    logger.debug(f"  Removed: {pycache_dir}")
+                except Exception as e:
+                    logger.warning(f"  Could not remove {pycache_dir}: {e}")
+
+            # Clear individual .pyc files in root and lib/
+            for pyc_file in self.current_dir.rglob('*.pyc'):
+                try:
+                    pyc_file.unlink()
+                    cleared_count += 1
+                    logger.debug(f"  Removed: {pyc_file}")
+                except Exception as e:
+                    logger.warning(f"  Could not remove {pyc_file}: {e}")
+
+            if cleared_count > 0:
+                logger.info(f"✓ Cleared {cleared_count} cache files/directories")
+            else:
+                logger.debug("No cache files found to clear")
+
+        except Exception as e:
+            logger.warning(f"Error clearing Python cache: {e}")
+
     def check_for_updates(self) -> Tuple[bool, Optional[Dict]]:
         """
         Check if updates are available
@@ -316,6 +353,11 @@ class AutoUpdater:
                     logger.warning(f"Failed to download {file_path}")
 
             logger.info(f"Successfully updated {success_count}/{len(files_to_download)} files")
+
+            # CRITICAL: Clear Python bytecode cache to force reload of updated .py files
+            # Without this, Python will use cached .pyc files even though source changed
+            if success_count > 0:
+                self._clear_python_cache()
 
             # Clean up old backup (keep only latest)
             try:

@@ -966,6 +966,7 @@ class UpdateModal(ctk.CTkToplevel):
         'COMPLETE': '#9c27b0', # Purple
         'HOTFIX': '#f39c12',   # Bright Orange
         'UX': '#1abc9c',       # Teal
+        'TECHNICAL': '#607d8b', # Gray
     }
 
     def __init__(self, parent, version: str, changelog: list):

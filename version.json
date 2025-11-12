@@ -1,7 +1,19 @@
 {
-  "version": "1.0.55",
+  "version": "1.0.56",
   "release_date": "2025-11-12",
   "changelog": [
+    {
+      "version": "1.0.56",
+      "date": "2025-11-12",
+      "changes": [
+        "CRITICAL FIX: Auto-updater now clears Python bytecode cache (.pyc files)",
+        "FIX: Updates now properly reload code instead of using stale cached files",
+        "NEW: TECHNICAL badge support in update modal (gray color)",
+        "TECHNICAL: Added _clear_python_cache() method to AutoUpdater",
+        "TECHNICAL: Clears __pycache__ directories and .pyc files after successful update",
+        "UX: Users will now see actual updated code, not cached versions"
+      ]
+    },
     {
       "version": "1.0.55",
       "date": "2025-11-12",
@@ -763,7 +775,7 @@
     "lib/api.py": "b59a4a3f105c7cdca14deafc46f7283a0ad51e404c73abebd17e90d11d0d4b64",
     "lib/capture.py": "6792c10d0e8dc2f4c63533462b8f04b7d169a54573b4f5dfe1933ddafabe382e",
     "lib/edmentum.py": "e9f837a1b98183a3ca6919e311f809072b7c380cefd20892039a58197cd547b5",
-    "lib/updater.py": "990e470045727264b9efffea8fab06626f37d1c94727a1f39e5e042e42fa4e58",
+    "lib/updater.py": "27d4a8fbd5e32ce16fa72b138b1ebcaa589abc23ff27bed73203c12296f1cf6f",
     "lib/utils.py": "bd912cd75b60df85c272d521f9e78b2f53e3a89301327e48d3842a60f0a077f9",
     "main.py": "b373583ee99c30931b24d386a7015a40a3f2e3c0cd395439e9b49512f483bfb9",
     "regenerate_hashes.py": "53c8df04e37aa5ea0787fdedb0a7e2e91a32523ccde8c99be0f0449436dc91ee",
@@ -786,10 +798,11 @@
     "test_screenshots/14_freehand_drawing.png": "a18311dbe73b18d91dafd235b8123511654d1b49775d08e3a223ec2fdd086b92",
     "test_screenshots/15_equation.png": "d1e3668d305d3ed15869ca92f46c636e17f9cbb968fe39b37f8a6b631f1da562",
     "test_screenshots/README.md": "ca09cfade3bf683ad3b2779ee7eeb6124c5486c8f8a40268649f8f7981d04452",
-    "ui.py": "b51df6289e036402fe2079c6edea9ba1ab3b74f32fa672b31f7075a9bd112e0f",
+    "ui.py": "51065901428f247757085e24ce4a7147219af0417dcef174aaa863a3f35a3863",
     "update_version_1053.py": "d040c03f83b0943ad7e525de24b5f1faefb4899126eee8c7718b2fd9abf6e920",
     "update_version_1054.py": "c89e81166051aadec231535c7534863fae458a3ed2e85da6215d499b9bf5c6de",
     "update_version_1055.py": "b32336455a428fb75d79085c06d18648e19d7dd5f1a81dae1b67e1f748dfdd07",
-    "version.json": "4e8cb376de020fd330b08f4fd2e780ac4ff59f8b12869cd96c91cbafeae9dccd"
+    "update_version_1056.py": "80768c4b5b3a8052afdb2c6106b202a5443536bc1af0c0f40ade04ea52c1843d",
+    "version.json": "3ce44de5c36f4b28e046648bf6278491a42d8ec805d02aae09be47bfb491e4e4"
   }
 }
