@@ -38,9 +38,10 @@ class AutoUpdater:
         Initialize the auto-updater
 
         Args:
-            current_dir: Directory containing the application (defaults to script directory)
+            current_dir: Directory containing the application (defaults to project root)
         """
-        self.current_dir = Path(current_dir) if current_dir else Path(__file__).parent
+        # CRITICAL FIX: updater.py is in lib/, so parent.parent gets project root
+        self.current_dir = Path(current_dir) if current_dir else Path(__file__).parent.parent
         self.version_file = self.current_dir / VERSION_FILE
         self.current_version = self._load_current_version()
 
@@ -412,7 +413,9 @@ def check_for_updates_silent() -> Tuple[bool, Optional[str], Optional[list]]:
     Returns:
         Tuple of (update_available, new_version, changelog)
     """
-    updater = AutoUpdater()
+    # Explicitly pass project root for safety (though default now correct)
+    project_root = Path(__file__).parent.parent
+    updater = AutoUpdater(str(project_root))
     update_available, remote_data = updater.check_for_updates()
 
     if update_available and remote_data:
@@ -433,7 +436,9 @@ def apply_update_silent(progress_callback=None) -> bool:
     Returns:
         True if update applied successfully
     """
-    updater = AutoUpdater()
+    # Explicitly pass project root for safety (though default now correct)
+    project_root = Path(__file__).parent.parent
+    updater = AutoUpdater(str(project_root))
     return updater.apply_update(progress_callback=progress_callback)
 
 

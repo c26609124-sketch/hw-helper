@@ -1,7 +1,22 @@
 {
-  "version": "1.0.56",
+  "version": "1.0.57",
   "release_date": "2025-11-12",
   "changelog": [
+    {
+      "version": "1.0.57",
+      "date": "2025-11-12",
+      "changes": [
+        "CRITICAL FIX: Auto-updater now downloads to CORRECT directory (project root)!",
+        "CRITICAL FIX: Updater was downloading to lib/ instead of project root since v1.0.52",
+        "FIX: Changed AutoUpdater default from .parent to .parent.parent",
+        "FIX: check_for_updates_silent now explicitly passes project root",
+        "FIX: apply_update_silent now explicitly passes project root",
+        "TECHNICAL: lib/updater.py line 44 - Added .parent.parent for correct path resolution",
+        "TECHNICAL: lib/updater.py lines 417 & 440 - Explicit project_root parameters",
+        "NOTE: All fixes from v1.0.53-v1.0.56 will NOW be properly applied",
+        "NOTE: This explains why icons/capture errors persisted despite version showing 1.0.56"
+      ]
+    },
     {
       "version": "1.0.56",
       "date": "2025-11-12",
@@ -775,7 +790,7 @@
     "lib/api.py": "b59a4a3f105c7cdca14deafc46f7283a0ad51e404c73abebd17e90d11d0d4b64",
     "lib/capture.py": "6792c10d0e8dc2f4c63533462b8f04b7d169a54573b4f5dfe1933ddafabe382e",
     "lib/edmentum.py": "e9f837a1b98183a3ca6919e311f809072b7c380cefd20892039a58197cd547b5",
-    "lib/updater.py": "27d4a8fbd5e32ce16fa72b138b1ebcaa589abc23ff27bed73203c12296f1cf6f",
+    "lib/updater.py": "b7f0551f099d713c49d90a5be47d1e5d98c20a9fa1de3a8f91471ae99bdb5cba",
     "lib/utils.py": "bd912cd75b60df85c272d521f9e78b2f53e3a89301327e48d3842a60f0a077f9",
     "main.py": "b373583ee99c30931b24d386a7015a40a3f2e3c0cd395439e9b49512f483bfb9",
     "regenerate_hashes.py": "53c8df04e37aa5ea0787fdedb0a7e2e91a32523ccde8c99be0f0449436dc91ee",
@@ -803,6 +818,7 @@
     "update_version_1054.py": "c89e81166051aadec231535c7534863fae458a3ed2e85da6215d499b9bf5c6de",
     "update_version_1055.py": "b32336455a428fb75d79085c06d18648e19d7dd5f1a81dae1b67e1f748dfdd07",
     "update_version_1056.py": "80768c4b5b3a8052afdb2c6106b202a5443536bc1af0c0f40ade04ea52c1843d",
-    "version.json": "3ce44de5c36f4b28e046648bf6278491a42d8ec805d02aae09be47bfb491e4e4"
+    "update_version_1057.py": "89cf49bda7c73bbd52634ac2fb9e49fbb8b162985427b99d241fb0a6621eecd7",
+    "version.json": "90f8bee7db2291a37415e89458f6cabbeceb37b3c633376b1f35315b9e624e6b"
   }
 }
