@@ -1,0 +1,12 @@
+{
+    "api_key": "",
+    "selected_model": "google/gemini-2.0-flash-exp:free",
+    "error_reporting": {
+        "enabled": true,
+        "endpoint": "https://api.slckr.xyz/api/report"
+    },
+    "telemetry": {
+        "enabled": true,
+        "endpoint": "https://api.slckr.xyz/api/telemetry"
+    }
+}

@@ -1,7 +1,18 @@
 {
-  "version": "1.0.50",
+  "version": "1.0.51",
   "release_date": "2025-11-12",
   "changelog": [
+    {
+      "version": "1.0.51",
+      "date": "2025-11-12",
+      "changes": [
+        "CRITICAL FIX: Error reporting now enabled by default for all users!",
+        "FIX: config.json now included in repository (was previously gitignored)",
+        "FIX: New users downloading from GitHub now get working error reporting",
+        "UPDATE: Rate limiting increased from 10 to 35 reports/hour per client",
+        "UPDATE: Error report limit message updated to reflect new 35/hour limit"
+      ]
+    },
     {
       "version": "1.0.50",
       "date": "2025-11-12",
