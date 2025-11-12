@@ -1586,7 +1586,7 @@ class HomeworkApp(ctk.CTk):
         # This runs asynchronously and doesn't block UI - initialization takes 3-8s
         # By the time user clicks "Get AI Answer", OCR will be ready with zero latency
         try:
-            from ocr_hotspot_detector import initialize_easyocr_async
+            from lib.edmentum import initialize_easyocr_async
             initialize_easyocr_async()
             print("🚀 EasyOCR pre-warming started in background (hot spot detection will be instant)")
         except Exception as e:
@@ -1984,7 +1984,7 @@ class HomeworkApp(ctk.CTk):
             # PHASE 1: Try OCR-based detection first (NEW in v1.0.31)
             print(f"📦 Attempting OCR-based bounding box detection...")
             try:
-                from ocr_hotspot_detector import detect_hotspot_locations
+                from lib.edmentum import detect_hotspot_locations
 
                 # Extract target organism names from AI response
                 target_labels = [ans.get('text_content', '').strip()

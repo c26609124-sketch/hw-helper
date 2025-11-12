@@ -1,7 +1,15 @@
 {
-  "version": "1.0.53",
+  "version": "1.0.54",
   "release_date": "2025-11-12",
   "changelog": [
+    {
+      "version": "1.0.54",
+      "date": "2025-11-12",
+      "changes": [
+        "CRITICAL FIX: OCR hotspot detector imports now use lib.edmentum module",
+        "FIX: Eliminated startup warnings about missing ocr_hotspot_detector.py module"
+      ]
+    },
     {
       "version": "1.0.53",
       "date": "2025-11-12",
@@ -768,8 +776,9 @@
     "test_screenshots/14_freehand_drawing.png": "a18311dbe73b18d91dafd235b8123511654d1b49775d08e3a223ec2fdd086b92",
     "test_screenshots/15_equation.png": "d1e3668d305d3ed15869ca92f46c636e17f9cbb968fe39b37f8a6b631f1da562",
     "test_screenshots/README.md": "ca09cfade3bf683ad3b2779ee7eeb6124c5486c8f8a40268649f8f7981d04452",
-    "ui.py": "09675d153d4f0aa77f781adc7e52e20f68ad8bba17493ff7c66035e3e9ae659e",
+    "ui.py": "d9340c20cb724de80297222147a9a11591dfe4fbe959c975c042b089edaffb16",
     "update_version_1053.py": "d040c03f83b0943ad7e525de24b5f1faefb4899126eee8c7718b2fd9abf6e920",
-    "version.json": "e9f83fb28700aca2cf1e005196e70772db30a923af093c07b6842dd8ceab4d48"
+    "update_version_1054.py": "c89e81166051aadec231535c7534863fae458a3ed2e85da6215d499b9bf5c6de",
+    "version.json": "e0be49f0475401f03ad9d965dc69fed7d253d7cac6a7775884aa8c2c19c3bbe6"
   }
 }
