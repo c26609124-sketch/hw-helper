@@ -1,7 +1,30 @@
 {
-  "version": "1.0.60",
+  "version": "1.0.61",
   "release_date": "2025-11-12",
   "changelog": [
+    {
+      "version": "1.0.61",
+      "date": "2025-11-12",
+      "changes": [
+        "CRITICAL FIX: Edmentum components now import correctly!",
+        "FIX: 08_fill_blank.png - EdmentumFillBlank now works (was missing from imports)",
+        "FIX: 09_sequence.png - EdmentumOrdering now works (was missing from imports)",
+        "FIX: 'No module named edmentum_components' error resolved",
+        "REMOVED: 4 inline imports that referenced wrong module name",
+        "NEW: REMOVED badge support for update modal (gray color)",
+        "NEW: CLAUDE.md documentation for development guidelines",
+        "NEW: Badge requirements - all badges in changelogs must exist in code",
+        "FIX: Added flush=True to all version loading prints (Windows visibility)",
+        "FIX: Error reporting status now logs on startup for debugging",
+        "TECHNICAL: ui.py lines 47-48 - Added EdmentumFillBlank & EdmentumHotSpot to imports",
+        "TECHNICAL: ui.py lines 4281, 4324, 5055, 5085 - Removed inline edmentum_components imports",
+        "TECHNICAL: ui.py line 983 - Added REMOVED badge to BADGE_COLORS",
+        "TECHNICAL: ui.py lines 1618-1622 - Added flush=True to _load_version() prints",
+        "TECHNICAL: ui.py lines 105-107 - Added error reporting status logging",
+        "NOTE: This fixes validator errors and 'No answers found' issues",
+        "NOTE: Edmentum components (fill blank, ordering, hot spot, hot text) now render properly"
+      ]
+    },
     {
       "version": "1.0.60",
       "date": "2025-11-12",
@@ -806,6 +829,7 @@
   "file_hashes": {
     ".claude/settings.local.json": "1850059a3bdaf718e2328f1ea0e510ea5dcdd30596532d35b0abcdf18bcf76fa",
     ".gitignore": "5c1d5016c27acf2e47ed357c27f58a1d730e44e77077599c12960f292b744d16",
+    "CLAUDE.md": "a6ee5d0df597f9d9e725f80b4411d48b5bf4fcec23159c044407c7e2bcd48844",
     "README.md": "5164ff91ff97b24124e5e0256d8e5383ccaeb1d32aae5a3d1f7df53d7dd225a0",
     "assets/icons/ai.png": "fc3194dd997184c6ebac71d7e8950cbe44a76d27bacc5b3629e16110ecaa5ebc",
     "assets/icons/brave.png": "1208d3bb6da19672da927df3de381b389af3e2175df4cb5870e3327362fec620",
@@ -860,7 +884,7 @@
     "test_screenshots/14_freehand_drawing.png": "a18311dbe73b18d91dafd235b8123511654d1b49775d08e3a223ec2fdd086b92",
     "test_screenshots/15_equation.png": "d1e3668d305d3ed15869ca92f46c636e17f9cbb968fe39b37f8a6b631f1da562",
     "test_screenshots/README.md": "ca09cfade3bf683ad3b2779ee7eeb6124c5486c8f8a40268649f8f7981d04452",
-    "ui.py": "6ddfe66cf7a7b8d5d97c7355530a47cfb9a23c34b3d339af433526165184abb9",
+    "ui.py": "eed0c01bd241ebdf27daec4685e09573a2747232a3b30721f2e4b8498d2f9067",
     "update_version_1053.py": "d040c03f83b0943ad7e525de24b5f1faefb4899126eee8c7718b2fd9abf6e920",
     "update_version_1054.py": "c89e81166051aadec231535c7534863fae458a3ed2e85da6215d499b9bf5c6de",
     "update_version_1055.py": "b32336455a428fb75d79085c06d18648e19d7dd5f1a81dae1b67e1f748dfdd07",
@@ -869,6 +893,7 @@
     "update_version_1058.py": "1e148f8b07bdcecf60fea97dd68d4e8bb7aad30f6593aee277f868fe1cf42355",
     "update_version_1059.py": "003acbe963d209c91210a274285a54bc2028b16943bb5b65483c15408eb97dd2",
     "update_version_1060.py": "3af16d2be7d1484c0c99a610f8f4576cefacc8d573263c7bb42fed2f7ecfe23b",
-    "version.json": "208f1a67450a706bdb9552f3b2497aeb41cee0292b5006b7995320ad7541aca0"
+    "update_version_1061.py": "c537d01c71e9238c67634b7bd2216400bc2241e5bfdde276f95110f6331fdb67",
+    "version.json": "3d5f4ab9493030e83f19bb49a5315ef8c3061d6febec0774c361272c35a2bbbb"
   }
 }

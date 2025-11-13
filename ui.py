@@ -44,6 +44,8 @@ try:
         EdmentumQuestionRenderer,
         EdmentumMultipleChoice,
         EdmentumMatchedPairs,
+        EdmentumFillBlank,      # v1.0.61: Added missing component
+        EdmentumHotSpot,        # v1.0.61: Added missing component
         EdmentumHotText,
         EdmentumOrdering
     )
@@ -98,6 +100,11 @@ def load_error_reporting_config():
 
 # Load error reporting config on module import
 load_error_reporting_config()
+
+# Show error reporting status for debugging
+print(f"📋 Error reporting: {'ENABLED' if ERROR_REPORTING_ENABLED else 'DISABLED'}", flush=True)
+if ERROR_REPORTING_ENABLED and ERROR_REPORTING_ENDPOINT:
+    print(f"   Endpoint: {ERROR_REPORTING_ENDPOINT}", flush=True)
 
 # --- PIL Text Capability Check ---
 try:
@@ -978,6 +985,7 @@ class UpdateModal(ctk.CTkToplevel):
         'HOTFIX': '#f39c12',   # Bright Orange
         'UX': '#1abc9c',       # Teal
         'TECHNICAL': '#607d8b', # Gray
+        'REMOVED': '#9e9e9e',  # Gray - for removed features/deprecations
     }
 
     def __init__(self, parent, version: str, changelog: list):
@@ -1612,11 +1620,11 @@ class HomeworkApp(ctk.CTk):
                 with open(version_file, 'r') as f:
                     version_data = json.load(f)
                     version = version_data.get('version', '0.0.0')
-                    print(f"✓ Loaded version: {version}")
+                    print(f"✓ Loaded version: {version}", flush=True)
             else:
-                print(f"⚠️ version.json not found at: {version_file}")
+                print(f"⚠️ version.json not found at: {version_file}", flush=True)
         except Exception as e:
-            print(f"⚠️ Could not load version: {e}")
+            print(f"⚠️ Could not load version: {e}", flush=True)
         return version
 
     def _cleanup_temp_files(self):
@@ -4276,8 +4284,7 @@ If any part of the question or an answer involves a numeric value that you canno
                     'confidence': 0.0
                 })
 
-            # Create EdmentumFillBlank component
-            from edmentum_components import EdmentumFillBlank
+            # Create EdmentumFillBlank component (already imported at top)
             component = EdmentumFillBlank(
                 self.progressive_answers_container,
                 question_text,
@@ -4320,8 +4327,7 @@ If any part of the question or an answer involves a numeric value that you canno
                 'prompt_text': 'Arranging items...'
             }
 
-            # Create EdmentumOrdering component
-            from edmentum_components import EdmentumOrdering
+            # Create EdmentumOrdering component (already imported at top)
             component = EdmentumOrdering(
                 self.progressive_answers_container,
                 question_text,
@@ -5052,9 +5058,8 @@ If any part of the question or an answer involves a numeric value that you canno
         if hasattr(self, 'hot_spot_answers') and self.hot_spot_answers:
             print(f"🎯 Processing {len(self.hot_spot_answers)} hot spot answers...")
 
-            # Create EdmentumHotSpot component
+            # Create EdmentumHotSpot component (already imported at top)
             if EDMENTUM_RENDERER_AVAILABLE:
-                from edmentum_components import EdmentumHotSpot
                 question_text = getattr(self, 'hot_spot_question', 'Select the correct locations')
 
                 # Create component in progressive_answers_container
@@ -5083,9 +5088,8 @@ If any part of the question or an answer involves a numeric value that you canno
         if hasattr(self, 'hot_text_selections') and self.hot_text_selections:
             print(f"📖 Processing {len(self.hot_text_selections)} text selection(s)...")
 
-            # Create EdmentumHotText component
+            # Create EdmentumHotText component (already imported at top)
             if EDMENTUM_RENDERER_AVAILABLE:
-                from edmentum_components import EdmentumHotText
                 question_text = getattr(self, 'hot_text_question', 'Select the correct text from the passage')
                 passage = getattr(self, 'hot_text_passage', question_text)
 
