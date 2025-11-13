@@ -369,8 +369,67 @@ class ErrorReporter:
             json.dump(report_data, f, indent=2, default=str)
         return filepath
 
+    @staticmethod
+    def capture_widget_screenshot(widget, output_path: str = None) -> Optional[str]:
+        """
+        Capture a screenshot of a CustomTkinter widget and save as PNG
 
-def send_error_report(report_data: dict, screenshot_path: str = None) -> bool:
+        Args:
+            widget: The CustomTkinter widget to capture
+            output_path: Optional path to save screenshot. If None, generates temp path.
+
+        Returns:
+            Path to saved screenshot, or None if capture failed
+        """
+        if not widget or not widget.winfo_exists():
+            print("⚠️ Widget screenshot: Widget doesn't exist")
+            return None
+
+        try:
+            # Import PIL ImageGrab
+            from PIL import ImageGrab
+
+            # Ensure widget is rendered and updated
+            widget.update_idletasks()
+
+            # Get widget absolute position and size
+            x = widget.winfo_rootx()
+            y = widget.winfo_rooty()
+            width = widget.winfo_width()
+            height = widget.winfo_height()
+
+            # Validate dimensions
+            if width <= 0 or height <= 0:
+                print(f"⚠️ Widget screenshot: Invalid dimensions ({width}x{height})")
+                return None
+
+            # Capture screenshot of widget area
+            bbox = (x, y, x + width, y + height)
+            screenshot = ImageGrab.grab(bbox)
+
+            # Generate output path if not provided
+            if not output_path:
+                import tempfile
+                temp_dir = tempfile.gettempdir()
+                timestamp = time.strftime('%Y%m%d_%H%M%S')
+                output_path = os.path.join(temp_dir, f"widget_screenshot_{timestamp}.png")
+
+            # Save screenshot
+            screenshot.save(output_path, 'PNG')
+            print(f"✓ Widget screenshot saved: {output_path} ({width}x{height})")
+            return output_path
+
+        except ImportError:
+            print("⚠️ PIL.ImageGrab not available - cannot capture widget screenshot")
+            return None
+        except Exception as e:
+            print(f"⚠️ Widget screenshot failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+
+
+def send_error_report(report_data: dict, screenshot_path: str = None, answer_screenshot_path: str = None) -> bool:
     """Send error report to slckr backend API"""
     if not ERROR_REPORTING_ENABLED:
         print("⚠️ Error reporting disabled")
@@ -395,7 +454,7 @@ def send_error_report(report_data: dict, screenshot_path: str = None) -> bool:
         os_name = platform.system()
         python_version = sys.version.split()[0]
 
-        # Send report with question screenshot only (answers in HTML format in ai_response_json)
+        # Send report with both question and answer screenshots
         report_id = api_client.send_report(
             error_message=error_message,
             version=version,
@@ -404,7 +463,8 @@ def send_error_report(report_data: dict, screenshot_path: str = None) -> bool:
             widget_tree_json=widget_tree_json,
             ai_response_json=ai_response_json,
             system_info_json=system_info_json,
-            question_screenshot_path=screenshot_path
+            question_screenshot_path=screenshot_path,
+            answer_screenshot_path=answer_screenshot_path
         )
 
         return report_id is not None
@@ -2193,9 +2253,21 @@ class HomeworkApp(ctk.CTk):
             # Create report
             report = ErrorReporter.create_report(self)
 
-            # Send to error reporting backend (question screenshot + HTML answers in report)
+            # Capture question screenshot (if available)
             screenshot_path = self.current_image_path if hasattr(self, 'current_image_path') else None
-            success = send_error_report(report, screenshot_path)
+
+            # Capture answer screenshot (AI Generated Answers container)
+            answer_screenshot_path = None
+            if hasattr(self, 'answer_scroll_frame') and self.answer_scroll_frame.winfo_exists():
+                print("📸 Capturing answer container screenshot...")
+                answer_screenshot_path = ErrorReporter.capture_widget_screenshot(self.answer_scroll_frame)
+                if answer_screenshot_path:
+                    print(f"✓ Answer screenshot captured: {answer_screenshot_path}")
+                else:
+                    print("⚠️ Could not capture answer screenshot")
+
+            # Send to error reporting backend (question screenshot + answer screenshot + HTML answers in report)
+            success = send_error_report(report, screenshot_path, answer_screenshot_path)
 
             if success:
                 print("✅ Error report sent automatically!")

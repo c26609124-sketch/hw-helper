@@ -149,7 +149,8 @@ class SlckrAPIClient:
         widget_tree_json: Optional[Dict] = None,
         ai_response_json: Optional[Dict] = None,
         system_info_json: Optional[Dict] = None,
-        question_screenshot_path: Optional[str] = None
+        question_screenshot_path: Optional[str] = None,
+        answer_screenshot_path: Optional[str] = None
     ) -> Optional[str]:
         """
         Send error report to backend
@@ -183,6 +184,11 @@ class SlckrAPIClient:
                 if question_screenshot_path and os.path.exists(question_screenshot_path):
                     fh = open(question_screenshot_path, 'rb')
                     files['question_screenshot'] = ('question.png', fh, 'image/png')
+                    file_handles.append(fh)
+
+                if answer_screenshot_path and os.path.exists(answer_screenshot_path):
+                    fh = open(answer_screenshot_path, 'rb')
+                    files['answer_screenshot'] = ('answer.png', fh, 'image/png')
                     file_handles.append(fh)
 
                 # Send request with proper format

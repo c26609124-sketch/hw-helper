@@ -1,7 +1,27 @@
 {
-  "version": "1.0.65",
-  "release_date": "2025-11-12",
+  "version": "1.0.66",
+  "release_date": "2025-11-13",
   "changelog": [
+    {
+      "version": "1.0.66",
+      "date": "2025-11-13",
+      "changes": [
+        "NEW: Answer screenshot capture for error reports - 1:1 visual debugging!",
+        "NEW: ErrorReporter.capture_widget_screenshot() method for pixel-perfect widget capture",
+        "NEW: Answer container (AI Generated Answers) now captured and sent to backend",
+        "FIX: Error reports now include both question AND answer screenshots",
+        "FIX: Backend admin dashboard displays answer screenshots alongside question screenshots",
+        "TECHNICAL: ui.py lines 372-429 - Added capture_widget_screenshot() using PIL.ImageGrab",
+        "TECHNICAL: ui.py lines 2259-2267 - Integrated answer screenshot into create_error_report()",
+        "TECHNICAL: ui.py line 432 - Updated send_error_report() to accept answer_screenshot_path",
+        "TECHNICAL: lib/api.py line 153 - Added answer_screenshot_path parameter to send_report()",
+        "TECHNICAL: lib/api.py lines 189-192 - Added answer screenshot file upload handling",
+        "UX: Claude can now see exact answer display to properly diagnose rendering issues",
+        "UX: Answer screenshots show formatted answers with green highlights and Edmentum styling",
+        "NOTE: Backend already supported answer screenshots - now client sends them automatically",
+        "NOTE: Uses PIL.ImageGrab to capture widget bbox (x, y, width, height)"
+      ]
+    },
     {
       "version": "1.0.65",
       "date": "2025-11-12",
