@@ -1,7 +1,27 @@
 {
-  "version": "1.0.63",
+  "version": "1.0.64",
   "release_date": "2025-11-12",
   "changelog": [
+    {
+      "version": "1.0.64",
+      "date": "2025-11-12",
+      "changes": [
+        "CRITICAL FIX: Windows 'charmap' codec error when loading version.json!",
+        "CRITICAL FIX: Error reporting now works on Windows (UTF-8 encoding added)",
+        "FIX: Added encoding='utf-8' to version.json loading (line 1626)",
+        "FIX: Added encoding='utf-8' to config.json loading (line 94)",
+        "FIX: Windows was using 'charmap' codec which can't decode UTF-8 emoji",
+        "NEW: Detailed config loading logging shows what was actually loaded",
+        "NEW: Shows 'enabled=True' and endpoint URL when loading config",
+        "TECHNICAL: ui.py line 1626 - with open(version_file, 'r', encoding='utf-8')",
+        "TECHNICAL: ui.py line 94 - with open(config_path, 'r', encoding='utf-8')",
+        "TECHNICAL: ui.py line 100 - Added config loading debug logging",
+        "NOTE: This fixes 'charmap codec can't decode byte 0x9d' error on Windows",
+        "NOTE: Error reporting 'DISABLED' was caused by encoding error during config load",
+        "NOTE: Version.json contains UTF-8 emoji (🎯 📝 ✅) which Windows charmap can't read",
+        "NOTE: Both Mac (UTF-8 default) and Windows (charmap default) now work correctly"
+      ]
+    },
     {
       "version": "1.0.63",
       "date": "2025-11-12",
@@ -927,7 +947,7 @@
     "test_screenshots/14_freehand_drawing.png": "a18311dbe73b18d91dafd235b8123511654d1b49775d08e3a223ec2fdd086b92",
     "test_screenshots/15_equation.png": "d1e3668d305d3ed15869ca92f46c636e17f9cbb968fe39b37f8a6b631f1da562",
     "test_screenshots/README.md": "ca09cfade3bf683ad3b2779ee7eeb6124c5486c8f8a40268649f8f7981d04452",
-    "ui.py": "f743e7bf2a3ac48a08ac3ca568bc09a00e09565e8772c9d377b5b1041f0ba870",
+    "ui.py": "6abb8306b23d761c40bdc48611317bc306e975a0459308525e1a1533b5a5cfa8",
     "update_version_1053.py": "d040c03f83b0943ad7e525de24b5f1faefb4899126eee8c7718b2fd9abf6e920",
     "update_version_1054.py": "c89e81166051aadec231535c7534863fae458a3ed2e85da6215d499b9bf5c6de",
     "update_version_1055.py": "b32336455a428fb75d79085c06d18648e19d7dd5f1a81dae1b67e1f748dfdd07",
@@ -939,6 +959,7 @@
     "update_version_1061.py": "c537d01c71e9238c67634b7bd2216400bc2241e5bfdde276f95110f6331fdb67",
     "update_version_1062.py": "3104e3a28e847a7f5f69b52c88ddccc3ca10f9e91a07d99dda8f114a9ce71d60",
     "update_version_1063.py": "60869128ac2c169929a80d2201afb2bf21587eab6e797c42bddcf048d93d39f3",
-    "version.json": "dc995bd5062729f318ae15749844d8e62de5d029c33cab1f90498394d2edd90e"
+    "update_version_1064.py": "6c85cf4bd4b32825e93b1c4f23943c9c16d1677d5ea8092f58c00dc60f1199dd",
+    "version.json": "5ac9ace9aece0263bd5665e6cac702849edc302ab97efb1c567f1f4965dde655"
   }
 }

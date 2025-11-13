@@ -90,13 +90,18 @@ def load_error_reporting_config():
     try:
         config_path = Path(__file__).parent / "config.json"
         if config_path.exists():
-            with open(config_path, 'r') as f:
+            # v1.0.64: CRITICAL FIX - Add UTF-8 encoding for Windows compatibility
+            with open(config_path, 'r', encoding='utf-8') as f:
                 config = json.load(f)
                 error_config = config.get('error_reporting', {})
                 ERROR_REPORTING_ENABLED = error_config.get('enabled', False)
                 ERROR_REPORTING_ENDPOINT = error_config.get('endpoint', '')
+                # v1.0.64: Log what was actually loaded for debugging
+                print(f"🔧 Loaded error_reporting config: enabled={ERROR_REPORTING_ENABLED}, endpoint={ERROR_REPORTING_ENDPOINT[:30]}...", flush=True)
+        else:
+            print(f"⚠️ config.json not found at: {config_path}", flush=True)
     except Exception as e:
-        print(f"⚠️ Could not load error reporting config: {e}")
+        print(f"⚠️ Could not load error reporting config: {e}", flush=True)
 
 # Load error reporting config on module import
 load_error_reporting_config()
@@ -1621,7 +1626,9 @@ class HomeworkApp(ctk.CTk):
         try:
             version_file = Path(__file__).parent / "version.json"
             if version_file.exists():
-                with open(version_file, 'r') as f:
+                # v1.0.64: CRITICAL FIX - Add UTF-8 encoding for Windows compatibility
+                # Windows defaults to 'charmap' which can't decode UTF-8 emoji/special chars
+                with open(version_file, 'r', encoding='utf-8') as f:
                     version_data = json.load(f)
                     version = version_data.get('version', '0.0.0')
                     print(f"✓ Loaded version: {version}", flush=True)
