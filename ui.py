@@ -1366,6 +1366,9 @@ class HomeworkApp(ctk.CTk):
         self.ai_thread = None
         self.ai_cancelled = threading.Event()
 
+        # Load version synchronously (before any threads that might need it)
+        self.current_version = self._load_version()
+
         # Load button icons for workflow buttons
         self.button_capture_icon = IconManager.load_button_icon('button-capture.png', size=(20, 20))
         self.button_answer_icon = IconManager.load_button_icon('button-answer.png', size=(20, 20))
@@ -1523,28 +1526,13 @@ class HomeworkApp(ctk.CTk):
                 def send_telemetry_async():
                     try:
                         api_client = SlckrAPIClient()
-                        # Load version from version.json
-                        version = "0.0.0"  # Changed from "1.0.50" - more obvious when loading fails
-                        try:
-                            version_file = Path(__file__).parent / "version.json"
-                            if version_file.exists():
-                                with open(version_file, 'r') as f:
-                                    version_data = json.load(f)
-                                    version = version_data.get('version', '0.0.0')
-                                    print(f"✓ Loaded version from version.json: {version}")
-                            else:
-                                print(f"⚠️ version.json not found at: {version_file}")
-                        except Exception as version_err:
-                            print(f"⚠️ Could not load version: {version_err}")
-
-                        self.current_version = version
 
                         # Get system info for telemetry
                         os_name = platform.system()
                         python_version = sys.version.split()[0]  # Get just version number
 
-                        # Send telemetry with all required parameters
-                        api_client.send_telemetry(version, os_name, python_version)
+                        # Send telemetry with all required parameters (use pre-loaded version)
+                        api_client.send_telemetry(self.current_version, os_name, python_version)
                     except Exception as e:
                         print(f"⚠️ Telemetry failed: {e}")
 
@@ -1609,6 +1597,27 @@ class HomeworkApp(ctk.CTk):
             print(f"⚠️ Could not start EasyOCR pre-warming: {e}")
 
         print("✅ GUI Initialized. Ready to capture.")
+
+    def _load_version(self) -> str:
+        """
+        Load version from version.json
+
+        Returns:
+            Version string (e.g., "1.0.60") or "0.0.0" if loading fails
+        """
+        version = "0.0.0"
+        try:
+            version_file = Path(__file__).parent / "version.json"
+            if version_file.exists():
+                with open(version_file, 'r') as f:
+                    version_data = json.load(f)
+                    version = version_data.get('version', '0.0.0')
+                    print(f"✓ Loaded version: {version}")
+            else:
+                print(f"⚠️ version.json not found at: {version_file}")
+        except Exception as e:
+            print(f"⚠️ Could not load version: {e}")
+        return version
 
     def _cleanup_temp_files(self):
         """Clean up temporary screenshot files to prevent disk accumulation"""
