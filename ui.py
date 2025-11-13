@@ -336,7 +336,15 @@ class ErrorReporter:
                 "progressive_answers_html": progressive_html,  # NEW: Streaming answers with green highlights
                 "answer_html": answer_html,  # Full answer display (fallback)
                 "answer_text": app_instance.answer_textbox.get("1.0", "end")[:5000] if hasattr(app_instance, 'answer_textbox') else "",
-                "response_metadata": getattr(app_instance, 'last_ai_response', None)
+                "response_metadata": getattr(app_instance, 'last_ai_response', None),
+                # v1.0.67: NEW - Critical debugging data for fill-in-the-blank issues
+                "identified_question": getattr(app_instance, 'identified_question', None),  # Shows if {{placeholders}} present
+                "answers_array": getattr(app_instance, 'last_ai_response', {}).get('answers') if hasattr(app_instance, 'last_ai_response') else None,  # All answer objects with IDs
+                "answer_structure": getattr(app_instance, 'answer_structure', None),  # Metadata about expected answers
+                "answer_index_map": getattr(app_instance, 'answer_index_map', None),  # Shows ID → index mapping
+                "rendering_strategy": getattr(app_instance, 'rendering_strategy', None),  # Which renderer was used
+                "edmentum_component_type": type(app_instance.edmentum_component).__name__ if hasattr(app_instance, 'edmentum_component') and app_instance.edmentum_component else None,
+                "console_buffer": getattr(app_instance, 'console_buffer', [])[-50:]  # Last 50 console log lines
             }
         except Exception as e:
             ai_response_json = {"error": f"AI response capture failed: {e}"}
@@ -1433,6 +1441,10 @@ class HomeworkApp(ctk.CTk):
         # Streaming state
         self.streaming_active = False
         self.accumulated_response = ""
+
+        # Console log buffer for error reports (circular buffer, last 200 lines)
+        self.console_buffer = []
+        self.console_buffer_max_size = 200
 
         # Capture thread management
         self.capture_thread = None
@@ -4386,11 +4398,30 @@ If any part of the question or an answer involves a numeric value that you canno
                     clean_id = answer_id.replace('fill_blank_', 'blank_').replace('fillblank_', 'blank_')
                     placeholders.append(clean_id)
 
-                # Append placeholder markers to question text for inline display
-                # Format: "Question text  _____  _____  _____" (inline blanks)
-                blank_markers = '  '.join([f'{{{{{placeholder}}}}}' for placeholder in placeholders])
-                question_text = f"{question_text}\n\n{blank_markers}"
-                print(f"   Reconstructed with {len(placeholders)} placeholder(s)")
+                # v1.0.67: IMPROVED - Try to preserve inline context instead of appending at end
+                # Strategy: Look for numbered lines (1., 2., 3.) and insert placeholder at end of each
+                lines = question_text.split('\n')
+                numbered_pattern = r'^\s*(\d+)\.\s+'
+                reconstructed_lines = []
+                placeholder_idx = 0
+
+                for line in lines:
+                    match = re.match(numbered_pattern, line)
+                    if match and placeholder_idx < len(placeholders):
+                        # Found numbered line - add placeholder at end
+                        reconstructed_lines.append(f"{line.rstrip()} {{{{{placeholders[placeholder_idx]}}}}}")
+                        placeholder_idx += 1
+                    else:
+                        reconstructed_lines.append(line)
+
+                # If we still have unused placeholders, append them at the end
+                if placeholder_idx < len(placeholders):
+                    remaining = placeholders[placeholder_idx:]
+                    blank_markers = '  '.join([f'{{{{{p}}}}}' for p in remaining])
+                    reconstructed_lines.append(f"\n{blank_markers}")
+
+                question_text = '\n'.join(reconstructed_lines)
+                print(f"   Reconstructed with {len(placeholders)} placeholder(s) - preserved inline context")
 
             # Create blank data with "???" placeholders
             placeholder_blanks = []
@@ -4410,21 +4441,43 @@ If any part of the question or an answer involves a numeric value that you canno
             self.edmentum_component = component
 
             # Store answer_id -> index mapping for updates (with fuzzy matching)
-            # The AI might send "fill_blank_1", "blank_1", or just "1"
+            # The AI might send "fill_blank_1", "blank_1", "fillblank1", "1", etc.
             self.answer_index_map = {}
             for i, placeholder_id in enumerate(placeholders):
-                # Map the exact placeholder_id
-                self.answer_index_map[placeholder_id] = i
+                # Map the exact placeholder_id (case-insensitive)
+                self.answer_index_map[placeholder_id.lower()] = i
 
-                # Also map common AI variations
-                # If placeholder is "blank_1", also accept "fill_blank_1", "fillblank_1", "1"
-                base_id = placeholder_id.lower().replace('fill_', '').replace('blank_', '').replace('_', '')
-                if base_id.isdigit():
-                    # Map numeric index (1-based from AI)
-                    self.answer_index_map[f"fill_blank_{base_id}"] = i
-                    self.answer_index_map[f"blank_{base_id}"] = i
-                    self.answer_index_map[f"fillblank_{base_id}"] = i
-                    self.answer_index_map[base_id] = i
+                # v1.0.67: Enhanced fuzzy matching - strip ALL non-alphanumeric characters
+                # Generate multiple ID variations for maximum matching flexibility
+                variations = set()
+
+                # Original variations
+                variations.add(placeholder_id.lower())
+                variations.add(placeholder_id.lower().replace('_', ''))
+                variations.add(placeholder_id.lower().replace('-', ''))
+
+                # Extract numeric component if present
+                numeric_part = ''.join(filter(str.isdigit, placeholder_id))
+                if numeric_part:
+                    # Add all common fill-blank ID formats with this number
+                    variations.add(numeric_part)  # Just the number
+                    variations.add(f"blank{numeric_part}")
+                    variations.add(f"blank_{numeric_part}")
+                    variations.add(f"fillblank{numeric_part}")
+                    variations.add(f"fill_blank_{numeric_part}")
+                    variations.add(f"fillblank_{numeric_part}")
+                    variations.add(f"answer{numeric_part}")
+                    variations.add(f"answer_{numeric_part}")
+
+                # Add alphanumeric-only version (strips all special chars)
+                alphanumeric_only = ''.join(c for c in placeholder_id.lower() if c.isalnum())
+                if alphanumeric_only:
+                    variations.add(alphanumeric_only)
+
+                # Map all variations to this blank index
+                for var in variations:
+                    if var:  # Skip empty strings
+                        self.answer_index_map[var] = i
 
             print(f"📝 Created EdmentumFillBlank with {len(placeholders)} blank(s)")
             print(f"   Mapped IDs: {list(self.answer_index_map.keys())}")

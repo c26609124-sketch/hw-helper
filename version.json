@@ -1,7 +1,35 @@
 {
-  "version": "1.0.66",
+  "version": "1.0.67",
   "release_date": "2025-11-13",
   "changelog": [
+    {
+      "version": "1.0.67",
+      "date": "2025-11-13",
+      "changes": [
+        "CRITICAL FIX: Fill-in-the-blank now preserves inline sentence context (no more isolated answers)!",
+        "CRITICAL FIX: Middle blank '???' issue resolved with enhanced fuzzy answer ID matching",
+        "FIX: Placeholder reconstruction now detects numbered lines (1., 2., 3.) and inserts blanks inline",
+        "FIX: Fuzzy matching now handles 12+ ID variations (fill_blank_1, blank_1, fillblank1, 1, etc)",
+        "FIX: AI answer IDs stripped of ALL non-alphanumeric characters for maximum matching flexibility",
+        "NEW: Error reports now include 7 critical debugging fields for fill-in-the-blank issues",
+        "NEW: Console log capture buffer (last 200 lines) included in error reports",
+        "NEW: identified_question field shows if {{placeholders}} present in AI response",
+        "NEW: answers_array field shows all answer objects with their IDs",
+        "NEW: answer_structure field shows metadata about expected answers",
+        "NEW: answer_index_map field shows ID → blank index mapping",
+        "NEW: rendering_strategy field shows which renderer was used (edmentum_fill_blank, etc)",
+        "NEW: edmentum_component_type field shows component class name (EdmentumFillBlank, etc)",
+        "TECHNICAL: ui.py lines 1437-1439 - Added console_buffer circular buffer (200 line capacity)",
+        "TECHNICAL: ui.py lines 4383-4416 - Smart placeholder reconstruction with numbered line detection",
+        "TECHNICAL: ui.py lines 4435-4472 - Enhanced fuzzy matching with comprehensive ID variations",
+        "TECHNICAL: ui.py lines 334-348 - Expanded ai_response_json with 7 new debugging fields",
+        "UX: Fill-in-the-blank answers now show 'The **primary** elements that cause...' format",
+        "UX: All blanks now fill correctly during streaming (no more stuck '???' placeholders)",
+        "NOTE: Placeholder reconstruction inserts {{blank_N}} at end of each numbered sentence",
+        "NOTE: Unused placeholders appended at end if sentence count < placeholder count",
+        "NOTE: Error reports now provide complete context for diagnosing rendering issues"
+      ]
+    },
     {
       "version": "1.0.66",
       "date": "2025-11-13",
