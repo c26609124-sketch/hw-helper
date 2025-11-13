@@ -1,7 +1,25 @@
 {
-  "version": "1.0.58",
+  "version": "1.0.59",
   "release_date": "2025-11-12",
   "changelog": [
+    {
+      "version": "1.0.59",
+      "date": "2025-11-12",
+      "changes": [
+        "CRITICAL FIX: Telemetry was stuck at v1.0.50 due to hardcoded default!",
+        "FIX: Changed version default from '1.0.50' to '0.0.0' (makes failures obvious)",
+        "FIX: Added logging to version loading for better debugging",
+        "NEW: Error reports now export progressive_answers_container directly!",
+        "NEW: progressive_answers_html field captures streaming answers with green highlights",
+        "FIX: Removed dependency on last_ai_response check for answer export",
+        "NEW: Comprehensive client_secret logging to debug duplicate installation counting",
+        "TECHNICAL: ui.py line 1516 - Changed hardcoded version default",
+        "TECHNICAL: ui.py lines 300-328 - Export progressive_answers_container first, answer_scroll_frame as fallback",
+        "TECHNICAL: lib/api.py lines 27-74 - Added detailed logging for client credential management",
+        "NOTE: Telemetry will now report correct version (1.0.59+)",
+        "NOTE: Error reports will show actual AI answers with green highlights"
+      ]
+    },
     {
       "version": "1.0.58",
       "date": "2025-11-12",
@@ -798,7 +816,7 @@
     "docs/DOMAIN_SETUP.md": "e84b1347663c3403bb62549d7bbf49f0e9e8be7f577e9e3417c5c6d2c7ce34ad",
     "docs/QUICK_START_CLOUDFLARE_TUNNEL.md": "29067b4fdcefc179fbe77de33e3b4b9bfc39e1e7f5edbbe6b53991c0174b5af4",
     "lib/__init__.py": "48a6381201444a76bdf410215b554943d661a9b3d7cd64aa51445818a75429c7",
-    "lib/api.py": "b59a4a3f105c7cdca14deafc46f7283a0ad51e404c73abebd17e90d11d0d4b64",
+    "lib/api.py": "d7822ba8441275a42dab0c13f550433ee22356f55645bbc0d94f16b256e5ad84",
     "lib/capture.py": "da4125231d4daa1f936c2d250bc67faa6f5afe3659133ad733dfc9d425509a88",
     "lib/edmentum.py": "e9f837a1b98183a3ca6919e311f809072b7c380cefd20892039a58197cd547b5",
     "lib/updater.py": "b7f0551f099d713c49d90a5be47d1e5d98c20a9fa1de3a8f91471ae99bdb5cba",
@@ -824,13 +842,14 @@
     "test_screenshots/14_freehand_drawing.png": "a18311dbe73b18d91dafd235b8123511654d1b49775d08e3a223ec2fdd086b92",
     "test_screenshots/15_equation.png": "d1e3668d305d3ed15869ca92f46c636e17f9cbb968fe39b37f8a6b631f1da562",
     "test_screenshots/README.md": "ca09cfade3bf683ad3b2779ee7eeb6124c5486c8f8a40268649f8f7981d04452",
-    "ui.py": "51065901428f247757085e24ce4a7147219af0417dcef174aaa863a3f35a3863",
+    "ui.py": "cae040ac815c153274edabe14b6fa7e25401b0049dae032c2413edee6bd61dc3",
     "update_version_1053.py": "d040c03f83b0943ad7e525de24b5f1faefb4899126eee8c7718b2fd9abf6e920",
     "update_version_1054.py": "c89e81166051aadec231535c7534863fae458a3ed2e85da6215d499b9bf5c6de",
     "update_version_1055.py": "b32336455a428fb75d79085c06d18648e19d7dd5f1a81dae1b67e1f748dfdd07",
     "update_version_1056.py": "80768c4b5b3a8052afdb2c6106b202a5443536bc1af0c0f40ade04ea52c1843d",
     "update_version_1057.py": "89cf49bda7c73bbd52634ac2fb9e49fbb8b162985427b99d241fb0a6621eecd7",
     "update_version_1058.py": "1e148f8b07bdcecf60fea97dd68d4e8bb7aad30f6593aee277f868fe1cf42355",
-    "version.json": "d2002b1bfb6f81817844a1a6b0ad585029664052115080a5b8e8f04d08f8a7ee"
+    "update_version_1059.py": "003acbe963d209c91210a274285a54bc2028b16943bb5b65483c15408eb97dd2",
+    "version.json": "8e2cc9c1f7be7f1e604cdcc561b712a79765bdf25429c56c5b8ab22a3d5a614c"
   }
 }

@@ -27,11 +27,17 @@ class SlckrAPIClient:
     def _load_or_create_secret(self):
         """Load existing client secret or generate new one"""
         secret_path = self.SECRET_FILE
-        secret_path.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            secret_path.parent.mkdir(parents=True, exist_ok=True)
+            print(f"📁 Client secret path: {secret_path}")
+        except Exception as mkdir_err:
+            print(f"⚠️ Could not create secret directory: {mkdir_err}")
 
         try:
             if secret_path.exists():
                 # Load existing secret
+                print(f"📖 Loading existing client credentials from {secret_path}")
                 with open(secret_path, 'r') as f:
                     data = json.load(f)
                     self.client_id = data.get('client_id')
@@ -40,23 +46,30 @@ class SlckrAPIClient:
                 if self.client_id and self.client_secret:
                     print(f"✓ Loaded client credentials (ID: {self.client_id[:8]}...)")
                     return
+                else:
+                    print(f"⚠️ Incomplete credentials in file, regenerating...")
 
             # Generate new secret
+            print(f"🔑 Generating new client credentials...")
             self.client_id = str(uuid.uuid4())
             self.client_secret = str(uuid.uuid4())
 
             # Save to file
-            with open(secret_path, 'w') as f:
-                json.dump({
-                    'client_id': self.client_id,
-                    'client_secret': self.client_secret
-                }, f, indent=2)
-
-            print(f"✓ Generated new client credentials (ID: {self.client_id[:8]}...)")
+            try:
+                with open(secret_path, 'w') as f:
+                    json.dump({
+                        'client_id': self.client_id,
+                        'client_secret': self.client_secret
+                    }, f, indent=2)
+                print(f"✓ Generated and saved new client credentials (ID: {self.client_id[:8]}...)")
+            except Exception as save_err:
+                print(f"⚠️ Could not save client secret to file: {save_err}")
+                print(f"   Secret will be temporary (not persist across restarts)")
 
         except Exception as e:
             print(f"⚠️ Could not load/create client secret: {e}")
             # Fallback to temporary in-memory secret
+            print(f"   Using temporary in-memory credentials (will NOT persist)")
             self.client_id = str(uuid.uuid4())
             self.client_secret = str(uuid.uuid4())
 

@@ -297,24 +297,35 @@ class ErrorReporter:
 
         # Capture last AI response metadata
         ai_response_json = None
-        if hasattr(app_instance, 'last_ai_response'):
-            try:
-                # Export answer display as HTML for report page
-                answer_html = ""
-                if hasattr(app_instance, 'answer_scroll_frame'):
-                    try:
-                        answer_html = export_answers_html(app_instance.answer_scroll_frame)
-                    except Exception as html_err:
-                        answer_html = f"<div class='error'>HTML export failed: {html_err}</div>"
+        try:
+            # Export answer display as HTML for report page
+            # Priority 1: Export progressive_answers_container (has streaming answers with green highlights)
+            progressive_html = ""
+            if hasattr(app_instance, 'progressive_answers_container') and \
+               app_instance.progressive_answers_container is not None and \
+               app_instance.progressive_answers_container.winfo_exists():
+                try:
+                    progressive_html = export_answers_html(app_instance.progressive_answers_container)
+                except Exception as prog_err:
+                    progressive_html = f"<div class='error'>Progressive HTML export failed: {prog_err}</div>"
 
-                ai_response_json = {
-                    "model": app_instance.selected_model_var.get() if hasattr(app_instance, 'selected_model_var') else None,
-                    "answer_html": answer_html,  # NEW: HTML representation for display
-                    "answer_text": app_instance.answer_textbox.get("1.0", "end")[:5000] if hasattr(app_instance, 'answer_textbox') else "",
-                    "response_metadata": getattr(app_instance, 'last_ai_response', None)
-                }
-            except Exception as e:
-                ai_response_json = {"error": f"AI response capture failed: {e}"}
+            # Fallback: Export full answer_scroll_frame
+            answer_html = ""
+            if hasattr(app_instance, 'answer_scroll_frame'):
+                try:
+                    answer_html = export_answers_html(app_instance.answer_scroll_frame)
+                except Exception as html_err:
+                    answer_html = f"<div class='error'>HTML export failed: {html_err}</div>"
+
+            ai_response_json = {
+                "model": app_instance.selected_model_var.get() if hasattr(app_instance, 'selected_model_var') else None,
+                "progressive_answers_html": progressive_html,  # NEW: Streaming answers with green highlights
+                "answer_html": answer_html,  # Full answer display (fallback)
+                "answer_text": app_instance.answer_textbox.get("1.0", "end")[:5000] if hasattr(app_instance, 'answer_textbox') else "",
+                "response_metadata": getattr(app_instance, 'last_ai_response', None)
+            }
+        except Exception as e:
+            ai_response_json = {"error": f"AI response capture failed: {e}"}
 
         # System information
         system_info_json = {
@@ -1513,15 +1524,19 @@ class HomeworkApp(ctk.CTk):
                     try:
                         api_client = SlckrAPIClient()
                         # Load version from version.json
-                        version = "1.0.50"
+                        version = "0.0.0"  # Changed from "1.0.50" - more obvious when loading fails
                         try:
                             version_file = Path(__file__).parent / "version.json"
                             if version_file.exists():
                                 with open(version_file, 'r') as f:
                                     version_data = json.load(f)
-                                    version = version_data.get('version', '1.0.50')
-                        except:
-                            pass
+                                    version = version_data.get('version', '0.0.0')
+                                    print(f"✓ Loaded version from version.json: {version}")
+                            else:
+                                print(f"⚠️ version.json not found at: {version_file}")
+                        except Exception as version_err:
+                            print(f"⚠️ Could not load version: {version_err}")
+
                         self.current_version = version
 
                         # Get system info for telemetry
