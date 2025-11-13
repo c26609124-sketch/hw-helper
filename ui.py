@@ -1582,6 +1582,10 @@ class HomeworkApp(ctk.CTk):
         self.answer_list_label = ctk.CTkLabel(self.answer_list_frame, text="AI Generated Answers", font=ctk.CTkFont(family="Segoe UI", size=12, weight="bold")); self.answer_list_label.grid(row=0, column=0, padx=0, pady=(5,5), sticky="nw")
         self.answer_scroll_frame = ctk.CTkScrollableFrame(self.answer_list_frame, border_width=1, border_color=("gray80", "gray25")); self.answer_scroll_frame.grid(row=1, column=0, sticky="nsew"); self.answer_scroll_frame.grid_columnconfigure(0, weight=1)
         self.initial_answer_message = ctk.CTkLabel(self.answer_scroll_frame, text="Answers will appear here.", text_color=("gray60", "gray40")); self.initial_answer_message.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
+
+        # v1.0.63: Track user manual scroll state
+        self._user_manually_scrolled = False
+        self._setup_scroll_detection()
         # Redirect stdout/stderr to Activity Log (v1.0.9)
         sys.stdout = StdoutRedirector(self.activity_log, self)
         sys.stderr = StdoutRedirector(self.activity_log, self)
@@ -2492,18 +2496,45 @@ class HomeworkApp(ctk.CTk):
         print("🧹 Answer display and state cleared")
 
     def _auto_scroll_to_answers(self):
-        """Auto-scroll to bottom of answers container to show AI-generated answers"""
+        """Auto-scroll to TOP of answers container to show newly streamed AI answers"""
         try:
+            # v1.0.63: Only auto-scroll if user hasn't manually scrolled
+            if hasattr(self, '_user_manually_scrolled') and self._user_manually_scrolled:
+                print("📜 Skipping auto-scroll (user manually scrolled)")
+                return
+
             if hasattr(self, 'answer_scroll_frame') and self.answer_scroll_frame.winfo_exists():
                 # Update layout to ensure proper sizing
                 self.answer_scroll_frame.update_idletasks()
                 # Access internal canvas (CTkScrollableFrame wraps a canvas)
                 if hasattr(self.answer_scroll_frame, '_parent_canvas'):
                     canvas = self.answer_scroll_frame._parent_canvas
-                    canvas.yview_moveto(1.0)
-                    print("📜 Auto-scrolled to answers")
+                    # v1.0.63: CRITICAL FIX - Scroll to TOP (0.0) not bottom (1.0)
+                    # New answers appear at top of progressive_answers_container
+                    canvas.yview_moveto(0.0)
+                    print("📜 Auto-scrolled to TOP to show new answers")
         except Exception as e:
             print(f"⚠️ Auto-scroll error: {e}")
+
+    def _setup_scroll_detection(self):
+        """v1.0.63: Setup scroll event detection to track manual user scrolling"""
+        try:
+            # Bind to canvas scroll events
+            if hasattr(self.answer_scroll_frame, '_parent_canvas'):
+                canvas = self.answer_scroll_frame._parent_canvas
+                # Detect mousewheel scrolling
+                canvas.bind("<MouseWheel>", self._on_manual_scroll, add="+")
+                canvas.bind("<Button-4>", self._on_manual_scroll, add="+")  # Linux scroll up
+                canvas.bind("<Button-5>", self._on_manual_scroll, add="+")  # Linux scroll down
+                # Detect scrollbar dragging
+                canvas.bind("<ButtonPress-1>", self._on_manual_scroll, add="+")
+                print("✓ Scroll detection enabled")
+        except Exception as e:
+            print(f"⚠️ Scroll detection setup failed: {e}")
+
+    def _on_manual_scroll(self, event=None):
+        """v1.0.63: Mark that user manually scrolled"""
+        self._user_manually_scrolled = True
 
     def _debounced_scroll(self):
         """Debounced scroll handler for streaming updates"""
@@ -3842,6 +3873,10 @@ If any part of the question or an answer involves a numeric value that you canno
         first_render_time = None
         last_ui_update_time = [0]  # Use list for mutable reference
         pending_data = [None]  # Store pending render data
+
+        # v1.0.63: Reset manual scroll state for new AI request
+        self._user_manually_scrolled = False
+        print("🔄 Reset scroll state for new AI request")
 
         # PHASE 2: Progressive rendering callback with debouncing
         def stream_chunk_callback(chunk_text, full_accumulated):
