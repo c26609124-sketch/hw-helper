@@ -1,7 +1,29 @@
 {
-  "version": "1.0.61",
+  "version": "1.0.62",
   "release_date": "2025-11-12",
   "changelog": [
+    {
+      "version": "1.0.62",
+      "date": "2025-11-12",
+      "changes": [
+        "CRITICAL FIX: Fill blank silent failures now VISIBLE with comprehensive logging!",
+        "FIX: Answer ID mismatches now logged instead of silently skipped",
+        "FIX: Added '❌ ANSWER ID NOT FOUND' warnings when AI answer can't be mapped",
+        "FIX: Empty values now logged with '⚠️ EMPTY VALUE' warning",
+        "NEW: Enhanced fuzzy matching strips underscores and prefixes for better ID resolution",
+        "NEW: Post-streaming validation checks if blanks still show '???'",
+        "NEW: Validation shows which blanks failed and why",
+        "NEW: _validate_fill_blank_completeness() method runs after answer processing",
+        "TECHNICAL: ui.py lines 4476-4485 - Enhanced fuzzy matching algorithm",
+        "TECHNICAL: ui.py lines 4540-4548 - Comprehensive logging for missing answer_ids",
+        "TECHNICAL: ui.py lines 4519-4524 - Log empty values in direct_answer processing",
+        "TECHNICAL: ui.py lines 4464-4504 - New _validate_fill_blank_completeness() method",
+        "TECHNICAL: lib/edmentum.py lines 856-883 - Enhanced update_blank_value logging",
+        "NOTE: Now shows answer ID lookup process, successful matches, and failures",
+        "NOTE: Validation runs after each batch of answers, showing unfilled blank details",
+        "NOTE: This will help debug 'middle blank shows ???' issues"
+      ]
+    },
     {
       "version": "1.0.61",
       "date": "2025-11-12",
@@ -860,7 +882,7 @@
     "lib/__init__.py": "48a6381201444a76bdf410215b554943d661a9b3d7cd64aa51445818a75429c7",
     "lib/api.py": "d7822ba8441275a42dab0c13f550433ee22356f55645bbc0d94f16b256e5ad84",
     "lib/capture.py": "da4125231d4daa1f936c2d250bc67faa6f5afe3659133ad733dfc9d425509a88",
-    "lib/edmentum.py": "e9f837a1b98183a3ca6919e311f809072b7c380cefd20892039a58197cd547b5",
+    "lib/edmentum.py": "a5cc3b52b32121aa0192c88a463fda27fd3611063a32d1c74954dca72268d469",
     "lib/updater.py": "b7f0551f099d713c49d90a5be47d1e5d98c20a9fa1de3a8f91471ae99bdb5cba",
     "lib/utils.py": "bd912cd75b60df85c272d521f9e78b2f53e3a89301327e48d3842a60f0a077f9",
     "main.py": "b373583ee99c30931b24d386a7015a40a3f2e3c0cd395439e9b49512f483bfb9",
@@ -884,7 +906,7 @@
     "test_screenshots/14_freehand_drawing.png": "a18311dbe73b18d91dafd235b8123511654d1b49775d08e3a223ec2fdd086b92",
     "test_screenshots/15_equation.png": "d1e3668d305d3ed15869ca92f46c636e17f9cbb968fe39b37f8a6b631f1da562",
     "test_screenshots/README.md": "ca09cfade3bf683ad3b2779ee7eeb6124c5486c8f8a40268649f8f7981d04452",
-    "ui.py": "eed0c01bd241ebdf27daec4685e09573a2747232a3b30721f2e4b8498d2f9067",
+    "ui.py": "04f7e30a0cfdd0ca28ca8d9ef54c3bcf143390b961a1e4a69020013d9146432a",
     "update_version_1053.py": "d040c03f83b0943ad7e525de24b5f1faefb4899126eee8c7718b2fd9abf6e920",
     "update_version_1054.py": "c89e81166051aadec231535c7534863fae458a3ed2e85da6215d499b9bf5c6de",
     "update_version_1055.py": "b32336455a428fb75d79085c06d18648e19d7dd5f1a81dae1b67e1f748dfdd07",
@@ -894,6 +916,7 @@
     "update_version_1059.py": "003acbe963d209c91210a274285a54bc2028b16943bb5b65483c15408eb97dd2",
     "update_version_1060.py": "3af16d2be7d1484c0c99a610f8f4576cefacc8d573263c7bb42fed2f7ecfe23b",
     "update_version_1061.py": "c537d01c71e9238c67634b7bd2216400bc2241e5bfdde276f95110f6331fdb67",
-    "version.json": "3d5f4ab9493030e83f19bb49a5315ef8c3061d6febec0774c361272c35a2bbbb"
+    "update_version_1062.py": "3104e3a28e847a7f5f69b52c88ddccc3ca10f9e91a07d99dda8f114a9ce71d60",
+    "version.json": "b7a5bd400394e08993966ffc215015f0d5bd0629432d10d8168d1870929cee23"
   }
 }

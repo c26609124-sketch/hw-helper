@@ -853,13 +853,22 @@ class EdmentumFillBlank(EdmentumComponent):
             value: New text value for the blank
             confidence: Confidence score (optional)
         """
+        # v1.0.62: Comprehensive logging for debugging
         if blank_index < 0 or blank_index >= len(self.blanks):
-            print(f"⚠️ Invalid blank_index {blank_index} for update")
+            print(f"⚠️ EdmentumFillBlank: Invalid blank_index {blank_index} (valid range: 0-{len(self.blanks)-1})")
             return
+
+        # v1.0.62: Log update details
+        old_value = self.blanks[blank_index].get('text_content', '???')
+        blank_id = self.blanks[blank_index].get('answer_id', f'blank_{blank_index}')
 
         # Update blank data
         if value is not None:
             self.blanks[blank_index]['text_content'] = value
+            # v1.0.62: Log the update
+            print(f"   📝 EdmentumFillBlank: Blank {blank_index} (ID: '{blank_id}') updated: '{old_value}' → '{value}'")
+            if not value:
+                print(f"      ⚠️ EMPTY VALUE provided - blank will show as '???'")
         if confidence is not None:
             self.blanks[blank_index]['confidence'] = confidence
 
@@ -868,6 +877,10 @@ class EdmentumFillBlank(EdmentumComponent):
             widgets = self.blank_widgets[blank_index]
             if widgets['label'].winfo_exists():
                 widgets['label'].configure(text=value if value is not None else '???')
+            else:
+                print(f"      ⚠️ Widget for blank {blank_index} no longer exists")
+        else:
+            print(f"      ⚠️ No widget found for blank {blank_index} (widgets count: {len(self.blank_widgets)})")
 
 
 # ============================================================================

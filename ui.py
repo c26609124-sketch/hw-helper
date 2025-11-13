@@ -4452,10 +4452,56 @@ If any part of the question or an answer involves a numeric value that you canno
                         print(f"⚠️ Failed to render answer item: {item_error}")
                         print(f"   Item data: {answer}")
 
+            # v1.0.62: Validate fill blank completeness after processing all answers
+            if "new_answers" in new_data and hasattr(self, 'edmentum_component'):
+                self._validate_fill_blank_completeness()
+
         except Exception as e:
             print(f"❌ Progressive render error: {e}")
             import traceback
             traceback.print_exc()
+
+    def _validate_fill_blank_completeness(self):
+        """
+        v1.0.62: Validate that all fill blanks have been filled after streaming
+        Logs warnings for any blanks still showing '???'
+        """
+        try:
+            # Only validate EdmentumFillBlank components
+            if not hasattr(self, 'edmentum_component'):
+                return
+
+            component = self.edmentum_component
+            if not hasattr(component, 'blanks') or not isinstance(component.blanks, list):
+                return
+
+            # Check if any blanks are still "???"
+            unfilled_blanks = []
+            for i, blank in enumerate(component.blanks):
+                text_content = blank.get('text_content', '')
+                answer_id = blank.get('answer_id', f'blank_{i}')
+                if text_content == '???' or not text_content:
+                    unfilled_blanks.append({'index': i, 'answer_id': answer_id})
+
+            if unfilled_blanks:
+                print(f"\n⚠️ FILL BLANK VALIDATION FAILED: {len(unfilled_blanks)}/{len(component.blanks)} blanks unfilled")
+                print(f"   Total blanks: {len(component.blanks)}")
+                print(f"   Unfilled blanks:")
+                for blank_info in unfilled_blanks:
+                    print(f"      • Blank {blank_info['index']} (ID: '{blank_info['answer_id']}') = '???'")
+
+                if hasattr(self, 'answer_index_map'):
+                    print(f"   Expected answer IDs in map: {list(self.answer_index_map.keys())}")
+
+                print(f"   Possible causes:")
+                print(f"      1. AI didn't generate answer for this blank")
+                print(f"      2. Answer ID mismatch (check logs above for 'ANSWER ID NOT FOUND')")
+                print(f"      3. Empty text_content received from AI")
+            else:
+                print(f"✅ Fill blank validation passed: All {len(component.blanks)} blanks filled")
+
+        except Exception as e:
+            print(f"⚠️ Fill blank validation error: {e}")
 
     def _replace_skeleton_with_answer(self, answer_id: str, answer_item: Dict):
         """
@@ -4472,9 +4518,24 @@ If any part of the question or an answer involves a numeric value that you canno
         if hasattr(self, 'edmentum_component') and hasattr(self, 'answer_index_map'):
             # Try exact match first, then case-insensitive
             lookup_id = answer_id if answer_id in self.answer_index_map else answer_id.lower()
+
+            # v1.0.62: Enhanced fuzzy matching for better answer_id resolution
+            if lookup_id not in self.answer_index_map:
+                # Try removing underscores and common prefixes
+                cleaned_id = lookup_id.replace('_', '').replace('fill', '').replace('blank', '')
+                for map_key in self.answer_index_map.keys():
+                    cleaned_map_key = str(map_key).replace('_', '').replace('fill', '').replace('blank', '')
+                    if cleaned_id == cleaned_map_key:
+                        lookup_id = map_key
+                        print(f"   🔍 Fuzzy matched '{answer_id}' → '{map_key}'")
+                        break
+
             if lookup_id in self.answer_index_map:
                 index = self.answer_index_map[lookup_id]
                 content_type = answer_item.get("content_type", "")
+
+                # v1.0.62: Log successful lookup for debugging
+                print(f"   🔍 Answer ID '{answer_id}' → index {index} (type: {content_type})")
 
                 # Update the appropriate component based on type
                 if content_type == "multiple_choice_option":
@@ -4500,8 +4561,13 @@ If any part of the question or an answer involves a numeric value that you canno
                     # For fill-in-the-blank questions
                     value = answer_item.get("text_content", "")
                     confidence = answer_item.get("confidence", 0.0)
+
+                    # v1.0.62: Log empty values
+                    if not value:
+                        print(f"   ⚠️ Blank {index} received EMPTY value (will show as '???')")
+
                     self.edmentum_component.update_blank_value(index, value=value, confidence=confidence)
-                    print(f"   ✓ Updated blank {index} seamlessly")
+                    print(f"   ✓ Updated blank {index} with value: '{value[:50]}...' " if len(value) > 50 else f"   ✓ Updated blank {index} with value: '{value}'")
 
                 elif content_type == "text_selection":
                     # For hot text questions - collect all selections and update
@@ -4517,6 +4583,15 @@ If any part of the question or an answer involves a numeric value that you canno
                     prompt_text = sequence_data.get("prompt_text", "")
                     self.edmentum_component.update_sequence(items=items, prompt_text=prompt_text)
                     print(f"   ✓ Updated ordering sequence with {len(items)} item(s) seamlessly")
+            else:
+                # v1.0.62: CRITICAL FIX - Log when answer_id not found (was silent failure)
+                content_type = answer_item.get("content_type", "unknown")
+                print(f"   ❌ ANSWER ID NOT FOUND: '{answer_id}' (type: {content_type})")
+                print(f"      Available IDs in map: {list(self.answer_index_map.keys())}")
+                print(f"      This answer will NOT be displayed (silent failure)")
+                if content_type == "direct_answer":
+                    value = answer_item.get("text_content", "")
+                    print(f"      Lost value: '{value[:100]}...'" if len(value) > 100 else f"      Lost value: '{value}'")
 
         # Check for text selection answers - collect for batch processing
         if hasattr(self, 'hot_text_pending') and self.hot_text_pending:
