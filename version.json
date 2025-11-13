@@ -1,7 +1,24 @@
 {
-  "version": "1.0.64",
+  "version": "1.0.65",
   "release_date": "2025-11-12",
   "changelog": [
+    {
+      "version": "1.0.65",
+      "date": "2025-11-12",
+      "changes": [
+        "CRITICAL CHANGE: Error reporting now ENABLED by default (opt-out instead of opt-in)!",
+        "FIX: Changed error_reporting default from False to True",
+        "FIX: Users with old config.json (enabled: false) will now have error reporting work",
+        "FIX: Missing config.json now defaults to error reporting enabled",
+        "NEW: Error reporting is opt-out - users must explicitly disable it",
+        "TECHNICAL: ui.py line 86 - ERROR_REPORTING_ENABLED = True (was False)",
+        "TECHNICAL: ui.py line 98 - error_config.get('enabled', True) (was False)",
+        "TECHNICAL: ui.py lines 103, 105 - Added 'enabled=True' to default messages",
+        "NOTE: This fixes issue where Windows PC had old config with enabled: false",
+        "NOTE: All users will now have error reporting enabled unless explicitly disabled",
+        "NOTE: To disable error reporting, set 'enabled': false in config.json"
+      ]
+    },
     {
       "version": "1.0.64",
       "date": "2025-11-12",
@@ -947,7 +964,7 @@
     "test_screenshots/14_freehand_drawing.png": "a18311dbe73b18d91dafd235b8123511654d1b49775d08e3a223ec2fdd086b92",
     "test_screenshots/15_equation.png": "d1e3668d305d3ed15869ca92f46c636e17f9cbb968fe39b37f8a6b631f1da562",
     "test_screenshots/README.md": "ca09cfade3bf683ad3b2779ee7eeb6124c5486c8f8a40268649f8f7981d04452",
-    "ui.py": "6abb8306b23d761c40bdc48611317bc306e975a0459308525e1a1533b5a5cfa8",
+    "ui.py": "e4966c2d2441c4a9e2ad2f0218ba3b00250dd8d42b281dc974b48ef763257657",
     "update_version_1053.py": "d040c03f83b0943ad7e525de24b5f1faefb4899126eee8c7718b2fd9abf6e920",
     "update_version_1054.py": "c89e81166051aadec231535c7534863fae458a3ed2e85da6215d499b9bf5c6de",
     "update_version_1055.py": "b32336455a428fb75d79085c06d18648e19d7dd5f1a81dae1b67e1f748dfdd07",
@@ -960,6 +977,7 @@
     "update_version_1062.py": "3104e3a28e847a7f5f69b52c88ddccc3ca10f9e91a07d99dda8f114a9ce71d60",
     "update_version_1063.py": "60869128ac2c169929a80d2201afb2bf21587eab6e797c42bddcf048d93d39f3",
     "update_version_1064.py": "6c85cf4bd4b32825e93b1c4f23943c9c16d1677d5ea8092f58c00dc60f1199dd",
-    "version.json": "5ac9ace9aece0263bd5665e6cac702849edc302ab97efb1c567f1f4965dde655"
+    "update_version_1065.py": "25fd9be06695a9c668125c9ad7b054e070a13668428d10dff6880e2e6eb26b77",
+    "version.json": "db836ecaba0da7d4148868cc79a45a6f40601df481f8d0c1ed1c3a3ea37c8de7"
   }
 }

@@ -82,7 +82,8 @@ except ImportError as e:
 # --- Error Reporting Configuration ---
 # Error reporting endpoint loaded from config.json
 ERROR_REPORTING_ENDPOINT = ""
-ERROR_REPORTING_ENABLED = False
+# v1.0.65: Changed default from False to True (error reporting is opt-out, not opt-in)
+ERROR_REPORTING_ENABLED = True
 
 def load_error_reporting_config():
     """Load error reporting configuration from config.json"""
@@ -94,14 +95,15 @@ def load_error_reporting_config():
             with open(config_path, 'r', encoding='utf-8') as f:
                 config = json.load(f)
                 error_config = config.get('error_reporting', {})
-                ERROR_REPORTING_ENABLED = error_config.get('enabled', False)
+                # v1.0.65: Changed default from False to True (opt-out instead of opt-in)
+                ERROR_REPORTING_ENABLED = error_config.get('enabled', True)
                 ERROR_REPORTING_ENDPOINT = error_config.get('endpoint', '')
                 # v1.0.64: Log what was actually loaded for debugging
                 print(f"🔧 Loaded error_reporting config: enabled={ERROR_REPORTING_ENABLED}, endpoint={ERROR_REPORTING_ENDPOINT[:30]}...", flush=True)
         else:
-            print(f"⚠️ config.json not found at: {config_path}", flush=True)
+            print(f"⚠️ config.json not found at: {config_path}, using defaults (enabled=True)", flush=True)
     except Exception as e:
-        print(f"⚠️ Could not load error reporting config: {e}", flush=True)
+        print(f"⚠️ Could not load error reporting config: {e}, using defaults (enabled=True)", flush=True)
 
 # Load error reporting config on module import
 load_error_reporting_config()
