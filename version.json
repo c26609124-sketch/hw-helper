@@ -1,7 +1,23 @@
 {
-  "version": "1.0.67",
+  "version": "1.0.68",
   "release_date": "2025-11-13",
   "changelog": [
+    {
+      "version": "1.0.68",
+      "date": "2025-11-13",
+      "changes": [
+        "CRITICAL FIX: Removed conflicting fallback fuzzy matching bypassing v1.0.67 enhancements",
+        "CRITICAL FIX: Fill-in-the-blank middle blank now correctly matches using comprehensive ID variations",
+        "FIX: Reduced gap between 'Terms' and 'Matches' headers in matched pairs (40px → 4px)",
+        "FIX: Eliminated redundant answer ID matching logic that only stripped underscores/prefixes",
+        "TECHNICAL: ui.py lines 4693-4701 - Removed old fallback fuzzy matching block",
+        "TECHNICAL: ui.py line 4691 - Added comment explaining comprehensive variations already mapped",
+        "TECHNICAL: lib/edmentum.py line 432 - Reduced center_spacer width from 40 to 4 pixels",
+        "UX: All fill-in-the-blank answers now leverage v1.0.67's 12+ ID variation mapping",
+        "UX: Matched pairs header spacing now consistent with row spacing (cleaner visual alignment)",
+        "NOTE: Middle blank '???' issue resolved by removing code that bypassed enhanced fuzzy matching"
+      ]
+    },
     {
       "version": "1.0.67",
       "date": "2025-11-13",
@@ -957,7 +973,7 @@
   "file_hashes": {
     ".claude/settings.local.json": "1850059a3bdaf718e2328f1ea0e510ea5dcdd30596532d35b0abcdf18bcf76fa",
     ".gitignore": "5c1d5016c27acf2e47ed357c27f58a1d730e44e77077599c12960f292b744d16",
-    "CLAUDE.md": "a6ee5d0df597f9d9e725f80b4411d48b5bf4fcec23159c044407c7e2bcd48844",
+    "CLAUDE.md": "ecaab6f700a702a35382253c1b2bb211424e9f71b278d93f7a4d2f401fd75647",
     "README.md": "5164ff91ff97b24124e5e0256d8e5383ccaeb1d32aae5a3d1f7df53d7dd225a0",
     "assets/icons/ai.png": "fc3194dd997184c6ebac71d7e8950cbe44a76d27bacc5b3629e16110ecaa5ebc",
     "assets/icons/brave.png": "1208d3bb6da19672da927df3de381b389af3e2175df4cb5870e3327362fec620",
@@ -986,9 +1002,9 @@
     "docs/DOMAIN_SETUP.md": "e84b1347663c3403bb62549d7bbf49f0e9e8be7f577e9e3417c5c6d2c7ce34ad",
     "docs/QUICK_START_CLOUDFLARE_TUNNEL.md": "29067b4fdcefc179fbe77de33e3b4b9bfc39e1e7f5edbbe6b53991c0174b5af4",
     "lib/__init__.py": "48a6381201444a76bdf410215b554943d661a9b3d7cd64aa51445818a75429c7",
-    "lib/api.py": "d7822ba8441275a42dab0c13f550433ee22356f55645bbc0d94f16b256e5ad84",
+    "lib/api.py": "cd6084c985f71ceefdbaed813ceeaa34768dcbdce83d1b6d299661319472c24c",
     "lib/capture.py": "da4125231d4daa1f936c2d250bc67faa6f5afe3659133ad733dfc9d425509a88",
-    "lib/edmentum.py": "a5cc3b52b32121aa0192c88a463fda27fd3611063a32d1c74954dca72268d469",
+    "lib/edmentum.py": "4fcdfdd043cb6d6fdcc7ca6067b2f13080f12c03076524623a09b4e7ec855cab",
     "lib/updater.py": "b7f0551f099d713c49d90a5be47d1e5d98c20a9fa1de3a8f91471ae99bdb5cba",
     "lib/utils.py": "bd912cd75b60df85c272d521f9e78b2f53e3a89301327e48d3842a60f0a077f9",
     "main.py": "b373583ee99c30931b24d386a7015a40a3f2e3c0cd395439e9b49512f483bfb9",
@@ -1012,7 +1028,7 @@
     "test_screenshots/14_freehand_drawing.png": "a18311dbe73b18d91dafd235b8123511654d1b49775d08e3a223ec2fdd086b92",
     "test_screenshots/15_equation.png": "d1e3668d305d3ed15869ca92f46c636e17f9cbb968fe39b37f8a6b631f1da562",
     "test_screenshots/README.md": "ca09cfade3bf683ad3b2779ee7eeb6124c5486c8f8a40268649f8f7981d04452",
-    "ui.py": "e4966c2d2441c4a9e2ad2f0218ba3b00250dd8d42b281dc974b48ef763257657",
-    "version.json": "0a91a4fef8dec92d97e86ea918fb5fc73532e3f8560a6caebe09c427e8ea083f"
+    "ui.py": "6811e2c1dd48cc110c6bc8935509ee35d170f11be48438eec17f09d7398fc31b",
+    "version.json": "0c2028492c74d8f99d444529a79c24391416fca2ad7466e8cafd94449f993146"
   }
 }

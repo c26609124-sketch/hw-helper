@@ -4687,18 +4687,8 @@ If any part of the question or an answer involves a numeric value that you canno
         # NEW APPROACH: Update Edmentum component directly (seamless streaming)
         if hasattr(self, 'edmentum_component') and hasattr(self, 'answer_index_map'):
             # Try exact match first, then case-insensitive
+            # v1.0.68: Removed old fallback fuzzy matching - comprehensive variations already mapped in skeleton setup
             lookup_id = answer_id if answer_id in self.answer_index_map else answer_id.lower()
-
-            # v1.0.62: Enhanced fuzzy matching for better answer_id resolution
-            if lookup_id not in self.answer_index_map:
-                # Try removing underscores and common prefixes
-                cleaned_id = lookup_id.replace('_', '').replace('fill', '').replace('blank', '')
-                for map_key in self.answer_index_map.keys():
-                    cleaned_map_key = str(map_key).replace('_', '').replace('fill', '').replace('blank', '')
-                    if cleaned_id == cleaned_map_key:
-                        lookup_id = map_key
-                        print(f"   🔍 Fuzzy matched '{answer_id}' → '{map_key}'")
-                        break
 
             if lookup_id in self.answer_index_map:
                 index = self.answer_index_map[lookup_id]

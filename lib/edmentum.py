@@ -429,7 +429,7 @@ class EdmentumMatchedPairs(EdmentumComponent):
         )
         left_header.pack(side="left", padx=2)
 
-        center_spacer = ctk.CTkFrame(header_frame, fg_color="transparent", width=40)
+        center_spacer = ctk.CTkFrame(header_frame, fg_color="transparent", width=4)
         center_spacer.pack(side="left")
 
         right_header = ctk.CTkLabel(
