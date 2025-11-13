@@ -965,19 +965,6 @@
     "test_screenshots/15_equation.png": "d1e3668d305d3ed15869ca92f46c636e17f9cbb968fe39b37f8a6b631f1da562",
     "test_screenshots/README.md": "ca09cfade3bf683ad3b2779ee7eeb6124c5486c8f8a40268649f8f7981d04452",
     "ui.py": "e4966c2d2441c4a9e2ad2f0218ba3b00250dd8d42b281dc974b48ef763257657",
-    "update_version_1053.py": "d040c03f83b0943ad7e525de24b5f1faefb4899126eee8c7718b2fd9abf6e920",
-    "update_version_1054.py": "c89e81166051aadec231535c7534863fae458a3ed2e85da6215d499b9bf5c6de",
-    "update_version_1055.py": "b32336455a428fb75d79085c06d18648e19d7dd5f1a81dae1b67e1f748dfdd07",
-    "update_version_1056.py": "80768c4b5b3a8052afdb2c6106b202a5443536bc1af0c0f40ade04ea52c1843d",
-    "update_version_1057.py": "89cf49bda7c73bbd52634ac2fb9e49fbb8b162985427b99d241fb0a6621eecd7",
-    "update_version_1058.py": "1e148f8b07bdcecf60fea97dd68d4e8bb7aad30f6593aee277f868fe1cf42355",
-    "update_version_1059.py": "003acbe963d209c91210a274285a54bc2028b16943bb5b65483c15408eb97dd2",
-    "update_version_1060.py": "3af16d2be7d1484c0c99a610f8f4576cefacc8d573263c7bb42fed2f7ecfe23b",
-    "update_version_1061.py": "c537d01c71e9238c67634b7bd2216400bc2241e5bfdde276f95110f6331fdb67",
-    "update_version_1062.py": "3104e3a28e847a7f5f69b52c88ddccc3ca10f9e91a07d99dda8f114a9ce71d60",
-    "update_version_1063.py": "60869128ac2c169929a80d2201afb2bf21587eab6e797c42bddcf048d93d39f3",
-    "update_version_1064.py": "6c85cf4bd4b32825e93b1c4f23943c9c16d1677d5ea8092f58c00dc60f1199dd",
-    "update_version_1065.py": "25fd9be06695a9c668125c9ad7b054e070a13668428d10dff6880e2e6eb26b77",
-    "version.json": "db836ecaba0da7d4148868cc79a45a6f40601df481f8d0c1ed1c3a3ea37c8de7"
+    "version.json": "0a91a4fef8dec92d97e86ea918fb5fc73532e3f8560a6caebe09c427e8ea083f"
   }
 }
