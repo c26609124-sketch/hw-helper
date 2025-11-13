@@ -10,7 +10,7 @@ This document contains important guidelines for maintaining the Homework Helper 
 
 ### Available Badge Types
 
-The following badge types are currently supported (defined in `ui.py` line 973):
+The following badge types are currently supported (defined in `ui.py` line 1045):
 
 | Badge Type | Color | Hex Code | Usage |
 |------------|-------|----------|-------|
@@ -24,6 +24,7 @@ The following badge types are currently supported (defined in `ui.py` line 973):
 | `UX` | Teal | `#1abc9c` | User experience improvements |
 | `TECHNICAL` | Gray | `#607d8b` | Technical notes or internal changes |
 | `REMOVED` | Gray | `#9e9e9e` | Removed features or deprecations |
+| `NOTE` | Indigo | `#5c6bc0` | Important notes and clarifications |
 
 ### How to Use Badges in Changelogs
 
@@ -46,7 +47,7 @@ Badges should be used as prefixes in changelog entries:
 
 If you need to add a new badge type:
 
-1. **Add to BADGE_COLORS dictionary** (ui.py, line 973):
+1. **Add to BADGE_COLORS dictionary** (ui.py, line 1045):
    ```python
    BADGE_COLORS = {
        # ... existing badges ...
@@ -163,4 +164,4 @@ Before committing version updates, verify:
 
 ---
 
-**Last Updated**: v1.0.61 (2025-11-12)
+**Last Updated**: v1.0.66 (2025-11-13)

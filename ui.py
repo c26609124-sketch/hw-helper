@@ -1053,6 +1053,7 @@ class UpdateModal(ctk.CTkToplevel):
         'UX': '#1abc9c',       # Teal
         'TECHNICAL': '#607d8b', # Gray
         'REMOVED': '#9e9e9e',  # Gray - for removed features/deprecations
+        'NOTE': '#5c6bc0',     # Indigo - for important notes and clarifications
     }
 
     def __init__(self, parent, version: str, changelog: list):
